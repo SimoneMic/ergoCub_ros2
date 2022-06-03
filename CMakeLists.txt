@@ -16,6 +16,10 @@ find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 FIND_PACKAGE(YARP COMPONENTS os REQUIRED)
 
+include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
+include_directories(/opt/ros/humble/include/tf2)
+include_directories(/opt/ros/humble/include/tf2_ros)
+
 add_executable(managed_odom src/odometry_lifeCycle.cpp)
 ament_target_dependencies(managed_odom
   "lifecycle_msgs"
