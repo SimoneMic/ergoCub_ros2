@@ -11,14 +11,21 @@ find_package(rclcpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(laser_geometry REQUIRED)
+find_package(pcl_conversions REQUIRED)
 FIND_PACKAGE(YARP COMPONENTS os REQUIRED)
+find_package(PCL REQUIRED)
 
 include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
 include_directories(/opt/ros/humble/include/tf2)
 include_directories(/opt/ros/humble/include/tf2_ros)
+include_directories(/opt/ros/humble/include/laser_geometry)
+include_directories(/opt/ros/humble/include/pcl_conversions)
 
 add_executable(managed_odom src/odometry_lifeCycle.cpp)
 ament_target_dependencies(managed_odom
@@ -30,6 +37,19 @@ ament_target_dependencies(managed_odom
   "YARP"
   "nav_msgs"
   "rclcpp"
+)
+
+add_executable(scan_filter src/scan_filtering_ros2.cpp)
+ament_target_dependencies(scan_filter
+  "std_msgs"
+  "tf2_ros"
+  "tf2"
+  "tf2_msgs"
+  "rclcpp"
+  "laser_geometry"
+  "pcl_conversions"
+  "PCL"
+  "sensor_msgs"
 )
 
 if(BUILD_TESTING)
