@@ -1,5 +1,5 @@
 <launch>
   <node pkg="robot_state_publisher" exec="robot_state_publisher">
-    <param name='robot_description' value="home/user1/cer-sim/gazebo/share/iCub/robots/stickBot/model.urdf"/>
+    <param name='robot_description' value="$(command 'cat /home/user1/cer-sim/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf')"/>
   </node>
 </launch>

@@ -27,22 +27,10 @@ private:
     const char* right_sole_frame = "r_sole";
     const char* left_sole_frame = "l_sole";
 
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer_in;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr raw_scan_sub;
-
-public:
-    ScanFilter(const char* node_name) : Node(node_name)
-    {
-        pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 10);
-        auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-        raw_scan_sub = this->create_subscription<sensor_msgs::msg::LaserScan> (
-            scan_topic,
-            default_qos,
-            std::bind(&ScanFilter::scan_callback, this, _1)
-        );
-    }
 
     void scan_callback(const sensor_msgs::msg::LaserScan::ConstPtr& scan_in)
     {
@@ -105,6 +93,20 @@ public:
             RCLCPP_ERROR(get_logger(), "Could not transform message: %s", transform_error.c_str());
         }
     };
+
+public:
+    ScanFilter() : Node("scan_filtering_node")
+    {
+        pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 10);
+        tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
+
+        raw_scan_sub = this->create_subscription<sensor_msgs::msg::LaserScan> (
+            scan_topic,
+            10,
+            std::bind(&ScanFilter::scan_callback, this, _1)
+        );
+    }
 };  // End of class ScanFilter node
 
 
@@ -113,13 +115,14 @@ int main(int argc, char** argv)
     rclcpp::init(argc, argv);
     if (rclcpp::ok())
     {
-        rclcpp::spin(std::make_shared<ScanFilter>("scan_filtering_node"));
+        auto node = std::make_shared<ScanFilter>();
+        std::cout << "Starting up node. \n";
+        rclcpp::spin(node);
     }
     else
     {
         std::cout << "ROS2 not available. Shutting down node. \n";
     }
-    
     return 0;
 }
 

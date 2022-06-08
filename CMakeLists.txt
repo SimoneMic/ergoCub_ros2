@@ -70,6 +70,7 @@ endif()
 
 install(TARGETS
   managed_odom
+  scan_filter
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
