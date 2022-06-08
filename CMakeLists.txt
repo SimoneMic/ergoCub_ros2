@@ -19,13 +19,16 @@ find_package(sensor_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
 FIND_PACKAGE(YARP COMPONENTS os REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.2 REQUIRED)
 
 include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
 include_directories(/opt/ros/humble/include/tf2)
 include_directories(/opt/ros/humble/include/tf2_ros)
 include_directories(/opt/ros/humble/include/laser_geometry)
 include_directories(/opt/ros/humble/include/pcl_conversions)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_executable(managed_odom src/odometry_lifeCycle.cpp)
 ament_target_dependencies(managed_odom
@@ -48,9 +51,10 @@ ament_target_dependencies(scan_filter
   "rclcpp"
   "laser_geometry"
   "pcl_conversions"
-  "PCL"
   "sensor_msgs"
 )
+
+target_link_libraries(scan_filter ${PCL_LIBRARIES})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
