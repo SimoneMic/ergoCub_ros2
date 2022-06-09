@@ -85,4 +85,10 @@ install(TARGETS
   odometry_standalone
   DESTINATION lib/${PROJECT_NAME})
 
+# install the launch directory
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
 ament_package()
