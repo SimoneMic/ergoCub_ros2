@@ -7,7 +7,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
 
-    robot_urdf = "$(command 'cat /home/user1/cer-sim/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf')"
+    robot_urdf = "$(command 'cat /home/user1/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf')"
 
     robot_state_publisher_node = Node(
         package="robot_state_publisher",

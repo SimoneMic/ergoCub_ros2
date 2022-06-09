@@ -42,7 +42,7 @@ ament_target_dependencies(managed_odom
   "rclcpp"
 )
 
-add_executable(odometry_standalone src/odometry_standalone.cpp)
+add_executable(odometry_standalone odometry_standalone/main.cpp odometry_standalone/src/odometry_standalone.cpp)
 ament_target_dependencies(odometry_standalone
   "std_msgs"
   "tf2_ros"
@@ -51,7 +51,7 @@ ament_target_dependencies(odometry_standalone
   "nav_msgs"
   "rclcpp"
 )
-target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/odometry_standalone/include)
 
 add_executable(scan_filter src/scan_filtering_ros2.cpp)
 ament_target_dependencies(scan_filter
@@ -82,6 +82,7 @@ endif()
 install(TARGETS
   managed_odom
   scan_filter
+  odometry_standalone
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

@@ -30,7 +30,6 @@ private:
     yarp::os::Port odom_reader_port;
     yarp::os::Port imu_reader_port;
     
-
     geometry_msgs::msg::TransformStamped transformStamped;
     geometry_msgs::msg::TransformStamped odom_tf;
     geometry_msgs::msg::TransformStamped TF;
@@ -45,7 +44,6 @@ private:
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
     const char* odom_topic = "estimated_odom";
-    const char* chest_imu_topic = "chest_imu";
     const char* odom_frame_name = "odom";
     const char* root_link_name = "root_link";
 
