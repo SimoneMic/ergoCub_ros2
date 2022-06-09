@@ -1,6 +1,8 @@
-#include <estimator_odom.hpp>
+#include <odometry_standalone.hpp>
 
 using std::placeholders::_1;
+
+using namespace std::chrono_literals;
 
 // Default constructor: creates ports and connects them
 Estimator_odom::Estimator_odom()
@@ -8,14 +10,15 @@ Estimator_odom::Estimator_odom()
 {
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(odom_topic, 10);
 
-    auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    chest_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-                                chest_imu_topic, 
-                                default_qos, 
-                                std::bind(&Estimator_odom::imu_callback, this, _1));
+    // YARP Port Connection
+    odom_reader_port.open(reader_port_name);
+    imu_reader_port.open(imu_reader_port_name);
+    printf("Trying to connect to %s\n", writer_port);
+    yarp::os::Network::connect(writer_port, reader_port_name);
+    yarp::os::Network::connect(imu_writer_port, imu_reader_port_name);
 
-    //tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-    //tfBuffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
+
     xy_offsets_computed = false;
     yaw_offsets_computed = false;
     initial_offset_x = 0;
@@ -42,45 +45,20 @@ Estimator_odom::Estimator_odom()
                                 0   , 0    , 0   , 0   , 0.12, 0   , 
                                 0   , 0    , 0   , 0   , 0   , 0.12};
 
-    initialized = false;
-}
+    timer_ = this->create_wall_timer( 33ms, std::bind(&Estimator_odom::timer_callback, this));
 
-bool Estimator_odom::init()
-{
-    try
-    {
-        // YARP Port Connection
-        odom_reader_port.open(reader_port_name);
-        imu_reader_port.open(imu_reader_port_name);
-        printf("Trying to connect to %s\n", writer_port);
-        yarp::os::Network::connect(writer_port, reader_port_name);
-        yarp::os::Network::connect(imu_writer_port, imu_reader_port_name);
-        tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
-        // ROS 
-        //chest_imu_sub = nh.subscribe(chest_imu_topic, 1, &Estimator_odom::imu_callback, this);
-        initialized = true;
-        return true;
-    }
-    catch(const std::exception& e)
-    {
-        RCLCPP_WARN(this->get_logger(), "%s \n",e.what());
-        return false;
-    }
+
 }
 
 bool Estimator_odom::get_TF(const char* target_link)
 {
     try
     {
-        if(! initialized)
-        {
-            throw std::logic_error(std::string("object not initialized: call init() method \n"));
-        }
         while (rclcpp::ok())
         {
             try
             {
-                TF = tfBuffer_in->lookupTransform(target_link, root_link_name, rclcpp::Time(0)); // target link = chest
+                TF = tf_buffer_in->lookupTransform(target_link, root_link_name, rclcpp::Time(0)); // target link = chest
                 return true;
             }
             catch (tf2::TransformException &ex)
@@ -127,11 +105,10 @@ bool Estimator_odom::compute_odom()
         tf2::Quaternion tf_quat;    //quat of the chest frame
         tf2::fromMsg(TF.transform.rotation, tf_quat);
         tf2::Quaternion q;  //temp
-        //q.setRPY(0, 0, imu_yaw);
+
         q.setRPY(0, 0, imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);
         new_quat = q * tf_quat;
-        //new_quat = tf_quat * q;
-        //new_quat.normalize();
+
         odom_tf.transform.rotation.x = new_quat.x();
         odom_tf.transform.rotation.y = new_quat.y();
         odom_tf.transform.rotation.z = new_quat.z();
@@ -175,28 +152,10 @@ bool Estimator_odom::publish_odom()
     }
 }
 
-void Estimator_odom::imu_callback(const sensor_msgs::msg::Imu::SharedPtr &msg)
+void Estimator_odom::timer_callback()
 {
-    tf2::fromMsg(msg->orientation, imu_quat);
-    tf2::Matrix3x3 m(imu_quat);
-    double r, p ;
-    m.getRPY(r, p, imu_yaw);
-    //if (! yaw_offsets_computed)
-    //{
-    //    initial_offset_yaw = imu_yaw;
-    //    yaw_offsets_computed = true;
-    //}
-    //imu_yaw = imu_yaw - initial_offset_yaw;
-    //4 debug
-    Eigen::Quaterniond q;
-    tf2::fromMsg(msg->orientation, q);
-    auto euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
-    Bottle imu_bottle;
-    imu_reader_port.read(imu_bottle);
-    RCLCPP_INFO(this->get_logger(), "YARP VALUE: %f vs Eigen: %f vs ROS: %f \n", imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533
-            , euler(2)
-            , imu_yaw);
-
+    if(!this->compute_odom()){};
+    if(!this->publish_odom()){};
 }
 
 int main(int argc, char* argv[])
@@ -205,24 +164,10 @@ int main(int argc, char* argv[])
     yarp::os::Network yarp;
     // ROS
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<Estimator_odom>;
-    Estimator_odom odom_obj;
-    if (! odom_obj.init())
+    auto node = std::make_shared<Estimator_odom>();
+    if (rclcpp::ok()) 
     {
-        RCLCPP_WARN(odom_obj.get_logger(), "Failed initializing odometry. Closing node. \n");
-        return 1;
+        rclcpp::spin(node);
     }
-
-    double const loopFreq = 50.0;
-    rclcpp::Rate looprate(loopFreq);
-
-    while (rclcpp::ok()) 
-    {
-        rclcpp::spin_some(std::make_shared<Estimator_odom>());
-        odom_obj.compute_odom();
-        odom_obj.publish_odom();
-        looprate.sleep();
-    }
-    rclcpp::shutdown();
     return 0;
 }

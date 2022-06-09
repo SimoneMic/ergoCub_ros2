@@ -42,6 +42,17 @@ ament_target_dependencies(managed_odom
   "rclcpp"
 )
 
+add_executable(odometry_standalone src/odometry_standalone.cpp)
+ament_target_dependencies(odometry_standalone
+  "std_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "YARP"
+  "nav_msgs"
+  "rclcpp"
+)
+target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
 add_executable(scan_filter src/scan_filtering_ros2.cpp)
 ament_target_dependencies(scan_filter
   "std_msgs"
