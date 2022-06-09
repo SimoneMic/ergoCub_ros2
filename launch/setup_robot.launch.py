@@ -26,6 +26,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         state_publisher,
-        #scan_filtering,
-        #rviz_node
+        scan_filtering,
+        rviz_node
     ])
