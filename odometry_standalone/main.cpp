@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
     auto node = std::make_shared<Estimator_odom>();
     if (rclcpp::ok()) 
     {
-        std::cout << "Spinning \n";
+        std::cout << "Spinning odometry_standalone node \n";
         rclcpp::spin(node);
     }
     return 0;

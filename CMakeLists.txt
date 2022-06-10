@@ -65,6 +65,15 @@ ament_target_dependencies(scan_filter
   "sensor_msgs"
 )
 
+add_executable(chest_projection src/chest_projection.cpp)
+ament_target_dependencies(chest_projection
+  "std_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "YARP"
+  "rclcpp"
+)
+
 target_link_libraries(scan_filter ${PCL_LIBRARIES})
 
 if(BUILD_TESTING)
@@ -83,6 +92,7 @@ install(TARGETS
   managed_odom
   scan_filter
   odometry_standalone
+  chest_projection
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
