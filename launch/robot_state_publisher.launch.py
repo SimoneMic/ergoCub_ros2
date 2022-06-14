@@ -1,3 +1,4 @@
+from ast import arg
 import imp
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -23,13 +24,7 @@ def generate_launch_description():
             package='robot_state_publisher',
             executable='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': robot_desc , 'use_sim_time': use_sim_time}]),
-            
-        Node(
-            package='ergoCub_ros2',
-            executable='odometry_standalone',
-            #output='screen',
-            parameters=[{'use_sim_time': use_sim_time}]
-        )
+            parameters=[{'robot_description': robot_desc , 'use_sim_time': use_sim_time}],
+            arguments=[robot_urdf])
     ])
 
