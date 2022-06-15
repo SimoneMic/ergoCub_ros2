@@ -100,5 +100,15 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
 )
+# install the maps directory
+install(DIRECTORY
+  maps
+  DESTINATION share/${PROJECT_NAME}/
+)
+# install the param directory
+install(DIRECTORY
+  param
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 ament_package()
