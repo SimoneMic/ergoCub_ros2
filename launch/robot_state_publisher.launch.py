@@ -7,23 +7,23 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    #use_sim_time = LaunchConfiguration('use_sim_time', default=True)
 
     robot_urdf = '/home/user1/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf'
     with open(robot_urdf, 'r') as infp:
         robot_desc = infp.read()
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
+        #DeclareLaunchArgument(
+        #    'use_sim_time',
+        #    default_value=True,
+        #    description='Use simulation (Gazebo) clock if true'),
             
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': robot_desc , 'use_sim_time': use_sim_time}],
+            parameters=[{'robot_description': robot_desc , 'use_sim_time': True}],
             arguments=[robot_urdf])
     ])
 

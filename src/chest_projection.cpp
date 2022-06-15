@@ -21,13 +21,13 @@ private:
     /* const */
     const char* reader_port_name = "/chest_projector/wrench_reader:i";
     const char* writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double loopFreq = 50.0;
+    const double loopFreq = 15.0;
     const char* chest_link = "chest";
     /* msgs */
     geometry_msgs::msg::TransformStamped TF;
     geometry_msgs::msg::TransformStamped projection_TF;
     /* TF objects*/
-    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub;
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_in;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     /* YARP ports*/
@@ -51,10 +51,9 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
     projection_TF.child_frame_id = "projection";
     /* init timer*/
     auto duration = std::chrono::duration<double>(1/loopFreq);
-    //std::chrono::duration<double, std::ratio<1, 1000>>period(loopFreq);
     timer_ = this->create_wall_timer( duration , std::bind(&ChestProjection::timer_callback, this));
     /* init TFs*/
-    tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    tf_pub = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
 }
@@ -97,7 +96,7 @@ void ChestProjection::timer_callback()
     projection_TF.transform.translation.z = 0;
     projection_TF.transform.rotation = tf2::toMsg(tf_quat);
     projection_TF.header.stamp = now();
-    tf_broadcaster->sendTransform(projection_TF);
+    tf_pub->sendTransform(projection_TF);
 }
 
 bool ChestProjection::get_TF(const char* target_link, const char* source_link)
@@ -109,7 +108,7 @@ bool ChestProjection::get_TF(const char* target_link, const char* source_link)
             try
             {
                 //std::cout << "looking for transform \n";
-                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0)); // target link = chest
+                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 300ms); // target link = chest
                 return true;
             }
             catch (tf2::TransformException &ex)

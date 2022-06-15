@@ -15,12 +15,12 @@ def generate_launch_description():
         )
 
     return LaunchDescription([
-        chest_projector,
+        #chest_projector,
 
         Node(
             package='ergoCub_ros2',
             executable='odometry_standalone',
             output='screen',
-            parameters=[{'use_sim_time': 'true'}]
+            parameters=[{'use_sim_time': True}]
         )
     ])

@@ -19,7 +19,7 @@ Estimator_odom::Estimator_odom()
 
     //std::cout << "created YARP ports \n";
 
-    tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
+    tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
 
@@ -63,7 +63,7 @@ bool Estimator_odom::get_TF(const char* target_link)
             try
             {
                 //std::cout << "looking for transform \n";
-                TF = tf_buffer_in->lookupTransform(target_link, root_link_name, rclcpp::Time(0)); // target link = chest rclcpp::Time(0)
+                TF = tf_buffer_in->lookupTransform(target_link, root_link_name, rclcpp::Time(0), 300ms); // target link = chest rclcpp::Time(0)
                 return true;
             }
             catch (tf2::TransformException &ex)
