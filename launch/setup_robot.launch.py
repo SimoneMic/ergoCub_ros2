@@ -22,9 +22,21 @@ def generate_launch_description():
             get_package_share_directory('ergoCub_ros2'), 'launch'),
             '/ergoCub_rviz.launch.py'])
         )
+    odom_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ergoCub_ros2'), 'launch'),
+            '/odometry_setup.launch.py'])
+        )
+    projection_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ergoCub_ros2'), 'launch'),
+            '/chest_projection.launch.py'])
+        )
 
     return LaunchDescription([
         state_publisher,
         scan_filtering,
+        projection_node,
         rviz_node,
+        odom_node
     ])

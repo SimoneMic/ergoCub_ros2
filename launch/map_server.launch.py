@@ -1,15 +1,20 @@
 import os
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    map_dir=os.path.join(
+            get_package_share_directory('ergoCub_ros2'),
+            'maps',
+            'map.yaml')
     return LaunchDescription([
         Node(
             package='nav2_map_server',
             executable='map_server',
             parameters=[
-                {'yaml_filename': '/home/user1/ros2_workspace/src/ergoCub_ros2/maps/map.yaml'}]
+                {'yaml_filename': map_dir}]
         ),
         Node(
             package='nav2_lifecycle_manager',
