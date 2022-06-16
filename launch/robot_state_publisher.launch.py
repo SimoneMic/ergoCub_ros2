@@ -14,10 +14,6 @@ def generate_launch_description():
         robot_desc = infp.read()
 
     return LaunchDescription([
-        #DeclareLaunchArgument(
-        #    'use_sim_time',
-        #    default_value=True,
-        #    description='Use simulation (Gazebo) clock if true'),
             
         Node(
             package='robot_state_publisher',

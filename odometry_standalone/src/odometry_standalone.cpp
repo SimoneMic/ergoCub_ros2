@@ -49,7 +49,8 @@ Estimator_odom::Estimator_odom()
                                 0   , 0    , 0   , 0   , 0.12, 0   , 
                                 0   , 0    , 0   , 0   , 0   , 0.12};
     //std::cout << "creating wall timer \n";
-    timer_ = this->create_wall_timer( 33ms, std::bind(&Estimator_odom::timer_callback, this));
+    auto duration = std::chrono::duration<double>(1/loopFreq);
+    timer_ = this->create_wall_timer( duration, std::bind(&Estimator_odom::timer_callback, this));
 
     //std::cout << "created estimator odom object \n";
 }

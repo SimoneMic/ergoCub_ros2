@@ -110,5 +110,11 @@ install(DIRECTORY
   param
   DESTINATION share/${PROJECT_NAME}/
 )
+# install the RVIZ directory
+install(DIRECTORY
+  rviz
+  DESTINATION share/${PROJECT_NAME}/
+)
+
 
 ament_package()
