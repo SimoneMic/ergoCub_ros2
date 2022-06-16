@@ -11,7 +11,7 @@ def generate_launch_description():
     rviz_config_dir = os.path.join(
         get_package_share_directory('ergoCub_ros2'),
         'rviz',
-        'model.rviz')
+        'nav2.rviz')
 
     return LaunchDescription([
         Node(package='rviz2',
