@@ -15,6 +15,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -64,6 +65,7 @@ ament_target_dependencies(scan_filter
   "pcl_conversions"
   "sensor_msgs"
 )
+target_link_libraries(scan_filter ${PCL_LIBRARIES})
 
 add_executable(chest_projection src/chest_projection.cpp)
 ament_target_dependencies(chest_projection
@@ -74,7 +76,16 @@ ament_target_dependencies(chest_projection
   "rclcpp"
 )
 
-target_link_libraries(scan_filter ${PCL_LIBRARIES})
+add_executable(setpoint_converter src/setpoint_converter.cpp)
+ament_target_dependencies(setpoint_converter
+  "std_msgs"
+  "YARP"
+  "rclcpp"
+  "geometry_msgs"
+)
+
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -93,6 +104,7 @@ install(TARGETS
   scan_filter
   odometry_standalone
   chest_projection
+  setpoint_converter
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
