@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/opt/ros/humble/include/**",
                 "/usr/include/eigen3/**",
-                "/usr/include/pcl-1.12/**"
+                "/usr/include/pcl-1.12/**",
+                "/home/user1/nav2_ws/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
