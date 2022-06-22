@@ -20,12 +20,12 @@ protected:
     nav_msgs::msg::Path transform_globalPlan(const geometry_msgs::msg::PoseStamped & pose); //still needed to have it in local frame
 
     bool transformPose(
-        const std::shared_ptr<tf2_ros::Buffer> & tf_buffer,
+        const std::shared_ptr<tf2_ros::Buffer> tf,
         const std::string frame,
         const geometry_msgs::msg::PoseStamped & in_pose,
         geometry_msgs::msg::PoseStamped & out_pose,
         const rclcpp::Duration & transform_tolerance
-    );
+    ) const;
 
     rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -39,6 +39,13 @@ protected:
 
     nav_msgs::msg::Path global_plan_;
     std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_pub_;
+
+    /* to remove: only used in initial version of algorithm*/
+    double desired_linear_vel_;
+    double lookahead_dist_;
+    double max_angular_vel_;
+
+    
 
 public:
     ErgoCubTrajectoryController() = default;
@@ -59,12 +66,11 @@ public:
       
     geometry_msgs::msg::TwistStamped computeVelocityCommands(
     const geometry_msgs::msg::PoseStamped & pose,
-    const geometry_msgs::msg::Twist & velocity, nav2_core::GoalChecker * goal_checker) override
-    {};
+    const geometry_msgs::msg::Twist & velocity, nav2_core::GoalChecker * goal_checker) override;
 
     // Could set a new plan or tell to global planner to replan
     void setPlan(const nav_msgs::msg::Path & path) override;
-
+    nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose);
 };
 
 }
