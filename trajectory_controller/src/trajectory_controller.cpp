@@ -8,14 +8,14 @@
 #include <string>
 #include <memory>
 
-//using std::hypot;
-//using std::min;
-//using std::max;
-//using std::abs;
-//using nav2_util::declare_parameter_if_not_declared;
-//using nav2_util::geometry_utils::euclidean_distance;
+using std::hypot;
+using std::min;
+using std::max;
+using std::abs;
+using nav2_util::declare_parameter_if_not_declared;
+using nav2_util::geometry_utils::euclidean_distance;
 
-namespace ergoCub_trajectory_controller
+namespace ergoCub_ros2
 {
 //Find the element in the iterator with minimum calculated value
 template<typename Iter, typename Getter>
@@ -35,23 +35,21 @@ Iter min_by(Iter begin, Iter end, Getter getCompareVal)
             lowest = comp;
             lowest_it = i;
         }
-        return lowest_it;
     }
+    return lowest_it;
 }
 
 void ErgoCubTrajectoryController::configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-    std::string name,
-    std::shared_ptr<tf2_ros::Buffer> & tf_buffer,
-    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros
-)
+  std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
+  const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros)
 {
     node_ = parent; //passing node handler
 
     auto node = node_.lock();   //checking weak_ptr integrity
 
     costmap_ros_ = costmap_ros; //updating costmap taken from navigation stack
-    tf_buffer_ = tf_buffer;     //passing tf buffer
+    tf_buffer_ = tf;     //passing tf buffer
     plugin_name_ = name;
     logger_ = node->get_logger();
     clock_ = node->get_clock();
@@ -201,7 +199,7 @@ nav_msgs::msg::Path ErgoCubTrajectoryController::transformGlobalPlan(const geome
     // let's get the pose of the robot in the frame of the plan
     geometry_msgs::msg::PoseStamped robot_pose;
     
-    if (! this->transformPose( tf_buffer_, global_plan_.header.frame_id, pose,
+    if (! transformPose( tf_buffer_, global_plan_.header.frame_id, pose,
         robot_pose, transform_tolerance_))
     {
       throw nav2_core::PlannerException("Unable to transform robot pose into global plan's frame");
@@ -222,9 +220,9 @@ nav_msgs::msg::Path ErgoCubTrajectoryController::transformGlobalPlan(const geome
     // From the closest point, look for the first point that's further then dist_threshold from the
     // robot. These points are definitely outside of the costmap so we won't transform them.
     auto transformation_end = std::find_if(
-        transformation_begin, end(global_plan_.poses),
+        transformation_begin, std::end(global_plan_.poses),
         [&](const auto & global_plan_pose) {
-            return euclidean_distance(robot_pose, global_plan_pose) > dist_threshold;
+            return nav2_util::geometry_utils::euclidean_distance(robot_pose, global_plan_pose) > dist_threshold;
         });
 
     // Helper function for the transform below. Transforms a PoseStamped from global frame to local
@@ -263,7 +261,7 @@ nav_msgs::msg::Path ErgoCubTrajectoryController::transformGlobalPlan(const geome
     return transformed_plan;
 }
 
-geometry_msgs::msg::TwistStamped computeVelocityCommands (
+geometry_msgs::msg::TwistStamped ErgoCubTrajectoryController::computeVelocityCommands (
     const geometry_msgs::msg::PoseStamped & pose,
     const geometry_msgs::msg::Twist & velocity, nav2_core::GoalChecker * goal_checker)
 {
@@ -295,4 +293,11 @@ geometry_msgs::msg::TwistStamped computeVelocityCommands (
       linear_vel = 0.0;
       angular_vel = max_angular_vel_;
     }
-}   // namespace ergoCub_trajectory_controller
+}  
+
+void ErgoCubTrajectoryController::setSpeedLimit(const double & speed_limit, const bool & percentage){}
+
+}  // namespace ergoCub_trajectory_controller
+
+#include "pluginlib/class_list_macros.hpp"
+PLUGINLIB_EXPORT_CLASS(ergoCub_ros2::ErgoCubTrajectoryController, nav2_core::Controller)

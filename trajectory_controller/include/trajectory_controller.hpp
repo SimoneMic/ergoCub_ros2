@@ -11,13 +11,13 @@
 #include <memory>
 #include <vector>
 
-namespace ergoCub_trajectory_controller
+namespace ergoCub_ros2
 {
 
 class ErgoCubTrajectoryController : public nav2_core::Controller
 {
 protected:
-    nav_msgs::msg::Path transform_globalPlan(const geometry_msgs::msg::PoseStamped & pose); //still needed to have it in local frame
+    nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose); //still needed to have it in local frame
 
     bool transformPose(
         const std::shared_ptr<tf2_ros::Buffer> tf,
@@ -45,7 +45,7 @@ protected:
     double lookahead_dist_;
     double max_angular_vel_;
 
-    
+    void setSpeedLimit(const double & speed_limit, const bool & percentage) override;
 
 public:
     ErgoCubTrajectoryController() = default;
@@ -53,10 +53,8 @@ public:
 
     void configure(
         const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-        std::string name,
-        std::shared_ptr<tf2_ros::Buffer> & tf_buffer,
-        const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros
-    );
+    std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
+    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros) override;
 
     void cleanup() override;
     void activate() override;
@@ -70,7 +68,6 @@ public:
 
     // Could set a new plan or tell to global planner to replan
     void setPlan(const nav_msgs::msg::Path & path) override;
-    nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose);
 };
 
 }

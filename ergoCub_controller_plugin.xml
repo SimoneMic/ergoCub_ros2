@@ -1,0 +1,7 @@
+<library path="ergoCub_ros2">
+  <class type="ergoCub_ros2::ErgoCubTrajectoryController" base_class_type="nav2_core::Controller">
+    <description>
+      ergoCub CoM trajectory tracking controller
+    </description>
+  </class>
+</library>

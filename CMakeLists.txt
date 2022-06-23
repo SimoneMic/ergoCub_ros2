@@ -22,6 +22,13 @@ find_package(pcl_conversions REQUIRED)
 FIND_PACKAGE(YARP COMPONENTS os REQUIRED)
 find_package(PCL 1.2 REQUIRED)
 
+find_package(nav2_common REQUIRED)
+find_package(nav2_core REQUIRED)
+find_package(nav2_costmap_2d REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pluginlib REQUIRED)
+
 include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
 include_directories(/opt/ros/humble/include/tf2)
 include_directories(/opt/ros/humble/include/tf2_ros)
@@ -30,6 +37,12 @@ include_directories(/opt/ros/humble/include/pcl_conversions)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+nav2_package()
+
+include_directories(
+  trajectory_controller/include
+)
 
 add_executable(managed_odom src/odometry_lifeCycle.cpp)
 ament_target_dependencies(managed_odom
@@ -84,6 +97,40 @@ ament_target_dependencies(setpoint_converter
   "geometry_msgs"
 )
 
+set(dependencies
+  rclcpp
+  geometry_msgs
+  nav2_costmap_2d
+  pluginlib
+  nav_msgs
+  nav2_util
+  nav2_core
+  tf2
+)
+
+add_library(ergoCub_trajectory_controller SHARED trajectory_controller/src/trajectory_controller.cpp)
+
+# prevent pluginlib from using boost
+target_compile_definitions(ergoCub_trajectory_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+ament_target_dependencies(ergoCub_trajectory_controller ${dependencies})
+
+install(TARGETS ergoCub_trajectory_controller
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY trajectory_controller/include/
+  DESTINATION include/
+)
+
+
+ament_export_include_directories(trajectory_controller/include)
+ament_export_libraries(ergoCub_trajectory_controller)
+ament_export_dependencies(${dependencies})
+
+pluginlib_export_plugin_description_file(nav2_core ergoCub_controller_plugin.xml)
 
 
 
