@@ -15,7 +15,7 @@ using std::abs;
 using nav2_util::declare_parameter_if_not_declared;
 using nav2_util::geometry_utils::euclidean_distance;
 
-namespace ergoCub_ros2
+namespace ergoCub_trajectory_controller
 {
 //Find the element in the iterator with minimum calculated value
 template<typename Iter, typename Getter>
@@ -300,4 +300,4 @@ void ErgoCubTrajectoryController::setSpeedLimit(const double & speed_limit, cons
 }  // namespace ergoCub_trajectory_controller
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(ergoCub_ros2::ErgoCubTrajectoryController, nav2_core::Controller)
+PLUGINLIB_EXPORT_CLASS(ergoCub_trajectory_controller::ErgoCubTrajectoryController, nav2_core::Controller)

@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 
-namespace ergoCub_ros2
+namespace ergoCub_trajectory_controller
 {
 
 class ErgoCubTrajectoryController : public nav2_core::Controller
