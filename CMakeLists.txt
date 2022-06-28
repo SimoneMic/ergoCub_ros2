@@ -97,6 +97,14 @@ ament_target_dependencies(setpoint_converter
   "geometry_msgs"
 )
 
+add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
+ament_target_dependencies(CoM_trajectory_publisher
+  "nav_msgs"
+  "YARP"
+  "rclcpp"
+  "geometry_msgs"
+)
+
 set(dependencies
   rclcpp
   geometry_msgs
@@ -152,6 +160,7 @@ install(TARGETS
   odometry_standalone
   chest_projection
   setpoint_converter
+  CoM_trajectory_publisher
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
