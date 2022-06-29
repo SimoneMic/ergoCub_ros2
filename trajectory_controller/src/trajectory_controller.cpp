@@ -41,8 +41,8 @@ Iter min_by(Iter begin, Iter end, Getter getCompareVal)
 
 void ErgoCubTrajectoryController::configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
-  const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros)
+    std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
+    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros)
 {
     node_ = parent; //passing node handler
 
@@ -50,7 +50,7 @@ void ErgoCubTrajectoryController::configure(
 
     costmap_ros_ = costmap_ros; //updating costmap taken from navigation stack
     tf_buffer_ = tf;     //passing tf buffer
-    plugin_name_ = name;
+    plugin_name_ = name;    //giving plugin name
     logger_ = node->get_logger();
     clock_ = node->get_clock();
 
@@ -79,14 +79,20 @@ void ErgoCubTrajectoryController::configure(
     node->get_parameter(plugin_name_ + ".lookahead_dist", lookahead_dist_);
     node->get_parameter(plugin_name_ + ".max_angular_vel", max_angular_vel_);
     
-    global_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
+    global_pub_ = node->create_publisher<nav_msgs::msg::Path>("/received_global_plan", 1);
+    CoM_pub_ = node->create_publisher<nav_msgs::msg::Path>("/received_CoM_plan", 1);
+
+    RCLCPP_INFO(
+      logger_,
+      "configured: %s of type ergoCub_trajectory_controller::ErgoCubTrajectoryController",
+      plugin_name_.c_str());
 }
 
 void ErgoCubTrajectoryController::cleanup()
 { 
     RCLCPP_INFO(
       logger_,
-      "Cleaning up controller: %s of type pure_pursuit_controller::ErgoCubTrajectoryController",
+      "Cleaning up controller: %s of type ergoCub_trajectory_controller::ErgoCubTrajectoryController",
       plugin_name_.c_str());
     global_pub_.reset();
 }
@@ -95,7 +101,7 @@ void ErgoCubTrajectoryController::activate()
 {
     RCLCPP_INFO(
       logger_,
-      "Activating controller: %s of type pure_pursuit_controller::ErgoCubTrajectoryController\"  %s",
+      "Activating controller: %s of type ergoCub_trajectory_controller::ErgoCubTrajectoryController\"  %s",
       plugin_name_.c_str());
     global_pub_->on_activate();
 }
@@ -104,7 +110,7 @@ void ErgoCubTrajectoryController::deactivate()
 {
     RCLCPP_INFO(
       logger_,
-      "Dectivating controller: %s of type pure_pursuit_controller::ErgoCubTrajectoryController\"  %s",
+      "Dectivating controller: %s of type ergoCub_trajectory_controller::ErgoCubTrajectoryController\"  %s",
       plugin_name_.c_str());
     global_pub_->on_deactivate();
 }
@@ -269,9 +275,9 @@ geometry_msgs::msg::TwistStamped ErgoCubTrajectoryController::computeVelocityCom
 
     // Find the first pose which is at a distance greater than the specified lookahed distance
     auto goal_pose_it = std::find_if(
-      transformed_plan.poses.begin(), transformed_plan.poses.end(), [&](const auto & ps) {
-        return hypot(ps.pose.position.x, ps.pose.position.y) >= lookahead_dist_;
-      });
+        transformed_plan.poses.begin(), transformed_plan.poses.end(), [&](const auto & ps) {
+            return hypot(ps.pose.position.x, ps.pose.position.y) >= lookahead_dist_;
+        });
 
     // If the last pose is still within lookahed distance, take the last pose
     if (goal_pose_it == transformed_plan.poses.end()) {
@@ -295,7 +301,10 @@ geometry_msgs::msg::TwistStamped ErgoCubTrajectoryController::computeVelocityCom
     }
 }  
 
-void ErgoCubTrajectoryController::setSpeedLimit(const double & speed_limit, const bool & percentage){}
+void ErgoCubTrajectoryController::setSpeedLimit(const double & speed_limit, const bool & percentage)
+{
+    return;
+}
 
 }  // namespace ergoCub_trajectory_controller
 
