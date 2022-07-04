@@ -230,41 +230,29 @@ DWBLocalPlanner::loadCritics()
 void
 DWBLocalPlanner::setPlan(const nav_msgs::msg::Path & path)
 {
-    yarp::os::Bottle msg_in;
-        nav_msgs::msg::Path CoM_path;
-        CoM_path.header.stamp = clock_->now();
-        CoM_path.header.frame_id = "odom";
-        reader_port.read(msg_in);
-        int n = msg_in.size();
-        geometry_msgs::msg::PoseStamped pose_tmp;
-        pose_tmp.header.stamp = clock_->now();
-        pose_tmp.header.frame_id = "odom";
-        tf2::Quaternion q;
-        for(int i=0; i<n ; i+=3)
-        {
-            geometry_msgs::msg::Point point_tmp;
-            for(int j=0; j<2; ++j)
-            {
-                if(j==0)
-                    point_tmp.x = msg_in.get(i+j).asFloat64();
-                else if(j==1)
-                    point_tmp.y = msg_in.get(i+j).asFloat64();
-                else
-                    point_tmp.z = msg_in.get(i+j).asFloat64();  //z is theta
-            }
-            q.setRPY(0, 0, point_tmp.z);
-            pose_tmp.pose.orientation.w = q.w();
-            pose_tmp.pose.orientation.x = q.x();
-            pose_tmp.pose.orientation.y = q.y();
-            pose_tmp.pose.orientation.z = q.z();
-            pose_tmp.pose.position.x = point_tmp.x;
-            pose_tmp.pose.position.y = point_tmp.y;
-            pose_tmp.pose.position.z = 0;
-            CoM_path.poses.push_back(pose_tmp);
-
-            //RCLCPP_INFO(this->get_logger(), "(%f %f %f)\n", point.x, point.y, point.z);
-        }
-    auto path2d = nav_2d_utils::pathToPath2D(CoM_path);
+  yarp::os::Bottle msg_in;
+  nav_msgs::msg::Path CoM_path;
+  CoM_path.header.stamp = clock_->now();
+  CoM_path.header.frame_id = "odom";
+  reader_port.read(msg_in);
+  int n = msg_in.size();
+  geometry_msgs::msg::PoseStamped pose_tmp;
+  pose_tmp.header.stamp = clock_->now();
+  pose_tmp.header.frame_id = "odom";
+  pose_tmp.pose.position.z = 0;
+  tf2::Quaternion q;
+  for(int i=0; i<n ; i+=3)
+  {
+    q.setRPY(0, 0, msg_in.get(i+2).asFloat64());
+    pose_tmp.pose.orientation.w = q.w();
+    pose_tmp.pose.orientation.x = q.x();
+    pose_tmp.pose.orientation.y = q.y();
+    pose_tmp.pose.orientation.z = q.z();
+    pose_tmp.pose.position.x = msg_in.get(i).asFloat64();
+    pose_tmp.pose.position.y = msg_in.get(i+1).asFloat64();
+    CoM_path.poses.push_back(pose_tmp);
+  }
+  auto path2d = nav_2d_utils::pathToPath2D(CoM_path);
   //auto path2d = nav_2d_utils::pathToPath2D(path);
   for (TrajectoryCritic::Ptr & critic : critics_) {
     critic->reset();
@@ -272,7 +260,7 @@ DWBLocalPlanner::setPlan(const nav_msgs::msg::Path & path)
 
   traj_generator_->reset();
 
-  pub_->publishGlobalPlan(path2d);
+  pub_->publishLocalPlan(path2d);
   global_plan_ = path2d;
 }
 
