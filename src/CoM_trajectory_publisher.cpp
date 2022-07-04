@@ -9,6 +9,7 @@
 
 #include <string>
 #include <chrono>
+#include <math.h>
 
 class CoM_trajectory_publisher : public rclcpp::Node
 {
@@ -20,14 +21,17 @@ private:
     const std::string topic_name = "/CoM_planned_trajectory";
 
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr downsampled_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
 
     void callback()
     {
         yarp::os::Bottle msg_in;
-        nav_msgs::msg::Path path;
-        path.header.stamp = now();
-        path.header.frame_id = "odom";
+        nav_msgs::msg::Path CoM_path;
+        nav_msgs::msg::Path downsampled_CoM_path;
+        CoM_path.header.stamp = now();
+        CoM_path.header.frame_id = "odom";
+        downsampled_CoM_path.header = CoM_path.header;
         try
         {
             reader_port.read(msg_in);
@@ -38,37 +42,43 @@ private:
             return;
         }
         int n = msg_in.size();
-        //RCLCPP_INFO(this->get_logger(), "Planned CoM trajectory (%i):\n", n);
-        geometry_msgs::msg::PoseStamped pose;
-        pose.header.stamp = now();
-        pose.header.frame_id = "odom";
+        RCLCPP_INFO(this->get_logger(), "Planned CoM trajectory (%i):\n", n);
+        geometry_msgs::msg::PoseStamped pose_tmp;
+        pose_tmp.header.stamp = now();
+        pose_tmp.header.frame_id = "odom";
         tf2::Quaternion q;
         for(int i=0; i<n ; i+=3)
         {
-            geometry_msgs::msg::Point point;
-            for(int j=0; j<2; ++j)
+            q.setRPY(0, 0, msg_in.get(i+2).asFloat64());
+            pose_tmp.pose.orientation.w = q.w();
+            pose_tmp.pose.orientation.x = q.x();
+            pose_tmp.pose.orientation.y = q.y();
+            pose_tmp.pose.orientation.z = q.z();
+            pose_tmp.pose.position.x = msg_in.get(i).asFloat64();
+            pose_tmp.pose.position.y = msg_in.get(i+1).asFloat64();
+            CoM_path.poses.push_back(pose_tmp);
+            //DOWNSAMPLE
+            if (downsampled_CoM_path.poses.empty())     //is it the first pose?
             {
-                if(j==0)
-                    point.x = msg_in.get(i+j).asFloat64();
-                else if(j==1)
-                    point.y = msg_in.get(i+j).asFloat64();
-                else
-                    point.z = msg_in.get(i+j).asFloat64();  //z is theta
+                downsampled_CoM_path.poses.push_back(pose_tmp);
             }
-            q.setRPY(0, 0, point.z);
-            pose.pose.orientation.w = q.w();
-            pose.pose.orientation.x = q.x();
-            pose.pose.orientation.y = q.y();
-            pose.pose.orientation.z = q.z();
-            pose.pose.position.x = point.x;
-            pose.pose.position.y = point.y;
-            pose.pose.position.z = 0;
-            path.poses.push_back(pose);
-
-            //RCLCPP_INFO(this->get_logger(), "(%f %f %f)\n", point.x, point.y, point.z);
+            else if (i+3 == n && i!=0)                   //is it the last pose?
+            {
+                downsampled_CoM_path.poses.push_back(pose_tmp);
+            }
+            else
+            {
+                double poses_distance = sqrt(std::pow(downsampled_CoM_path.poses.back().pose.position.x - CoM_path.poses.back().pose.position.x, 2) + 
+                                        std::pow(downsampled_CoM_path.poses.back().pose.position.y - CoM_path.poses.back().pose.position.y, 2));
+                if (poses_distance >= 0.01 )
+                {
+                    downsampled_CoM_path.poses.push_back(pose_tmp);
+                }
+            }
         }
-        pub_->publish(path);
-        //RCLCPP_INFO(this->get_logger(), "-----------------------------------\n");
+        RCLCPP_INFO(this->get_logger(), "Downsized CoM trajectory (%i) \n", downsampled_CoM_path.poses.size());
+        pub_->publish(CoM_path);
+        downsampled_pub_->publish(downsampled_CoM_path);
     }
 
 public:
@@ -77,6 +87,7 @@ public:
         reader_port.open(port_name);
         yarp::os::Network::connect(yarp_trajectory_port, port_name);
         pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name, 10);
+        downsampled_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_downsampled", 10);
         auto duration = std::chrono::duration<double>(1.0);
         timer_ = this->create_wall_timer(duration, std::bind(& CoM_trajectory_publisher::callback, this));
         RCLCPP_INFO(this->get_logger(), "Created Node\n");
