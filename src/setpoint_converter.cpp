@@ -4,7 +4,7 @@
 #include "yarp/os/RpcClient.h"
 
 #include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/twist.hpp"
+#include "nav_msgs/msg/path.hpp"
 
 #include <list>
 
@@ -13,6 +13,7 @@ using std::placeholders::_1;
 class SetpointConverter : public rclcpp::Node
 {
 private:
+    const std::string topic_name = "/plan";     //subscribe to global plan
     const char* port_name = "/setopint_converter/talker:o";
     const char* server_name = "/walking-coordinator/goal:i";
     const double x_vel_min = 0.04;
@@ -24,11 +25,12 @@ private:
     double setpoint_x = 0;
     double setpoint_y = 0;
 
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr setpoint_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr setpoint_sub_;
     
-
+    /*
     void msg_callback(const geometry_msgs::msg::Twist::ConstPtr& msg_in)
     {
+        //SPEED CONVERTER
         // X
         if (msg_in->linear.x >= x_vel_min && msg_in->linear.x <= x_vel_max)    
             //setpoint_x = msg_in->linear.x * 5;
@@ -57,6 +59,17 @@ private:
 
         port.write(msg_out);
     }
+    */
+
+   void msg_callback(const nav_msgs::msg::Path::ConstPtr& msg_in)
+    {
+        yarp::os::Bottle msg_out;
+        msg_out.addFloat64(msg_in->poses.back().pose.position.x);
+        msg_out.addFloat64(msg_in->poses.back().pose.position.y);
+        RCLCPP_INFO(this->get_logger(), "Setpoint x: %f y: %f \n", msg_in->poses.back().pose.position.x, msg_in->poses.back().pose.position.y);
+
+        port.write(msg_out);
+    }
 public:
     SetpointConverter() : rclcpp::Node("setpoint_converter_node")
     {
@@ -64,17 +77,13 @@ public:
         yarp::os::Network yarp;
         port.open(port_name);
         yarp::os::Network::connect(port_name, server_name);     //todo - check for connection or errors
-        setpoint_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-            "cmd_vel",
+        setpoint_sub_ = this->create_subscription<nav_msgs::msg::Path>(
+            topic_name,
             10,
             std::bind(&SetpointConverter::msg_callback, this, _1)
         );
     }
 };
-
-
-
-
 
 
 int main(int argc, char** argv)
