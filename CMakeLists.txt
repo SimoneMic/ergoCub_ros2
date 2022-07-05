@@ -91,10 +91,12 @@ ament_target_dependencies(chest_projection
 
 add_executable(setpoint_converter src/setpoint_converter.cpp)
 ament_target_dependencies(setpoint_converter
-  "std_msgs"
   "YARP"
   "rclcpp"
-  "geometry_msgs"
+  "nav_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
 )
 
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)

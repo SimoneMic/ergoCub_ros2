@@ -5,9 +5,13 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <list>
 
+using namespace std::chrono_literals;
 using std::placeholders::_1;
 
 class SetpointConverter : public rclcpp::Node
@@ -16,14 +20,16 @@ private:
     const std::string topic_name = "/plan";     //subscribe to global plan
     const char* port_name = "/setopint_converter/talker:o";
     const char* server_name = "/walking-coordinator/goal:i";
-    const double x_vel_min = 0.04;
-    const double x_vel_max = 0.2;
-    const double y_vel_min = 0.05;
-    const double y_vel_max = 0.6;
+    //const double x_vel_min = 0.04;
+    //const double x_vel_max = 0.2;
+    //const double y_vel_min = 0.05;
+    //const double y_vel_max = 0.6;
     yarp::os::Port port;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
     
-    double setpoint_x = 0;
-    double setpoint_y = 0;
+    //double setpoint_x = 0;
+    //double setpoint_y = 0;
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr setpoint_sub_;
     
@@ -64,9 +70,16 @@ private:
    void msg_callback(const nav_msgs::msg::Path::ConstPtr& msg_in)
     {
         yarp::os::Bottle msg_out;
-        msg_out.addFloat64(msg_in->poses.back().pose.position.x);
-        msg_out.addFloat64(msg_in->poses.back().pose.position.y);
-        RCLCPP_INFO(this->get_logger(), "Setpoint x: %f y: %f \n", msg_in->poses.back().pose.position.x, msg_in->poses.back().pose.position.y);
+        // Need to transform the path from map frame to odom frame
+        //double x_goal_map = msg_in->poses.back().pose.position.x;
+        //double y_goal_map = msg_in->poses.back().pose.position.y;
+        //geometry_msgs::msg::TransformStamped tf = tf_buffer_in->lookupTransform("odom", "map", rclcpp::Time(0), 200ms);
+        geometry_msgs::msg::PoseStamped goal_odom;
+        tf_buffer_in->transform(msg_in->poses.back(), goal_odom, "odom", 200ms);
+        
+        msg_out.addFloat64(goal_odom.pose.position.x);
+        msg_out.addFloat64(goal_odom.pose.position.y);
+        RCLCPP_INFO(this->get_logger(), "Setpoint x: %f y: %f \n", msg_out.get(0).asFloat64(), msg_out.get(1).asFloat64());
 
         port.write(msg_out);
     }
@@ -82,6 +95,9 @@ public:
             10,
             std::bind(&SetpointConverter::msg_callback, this, _1)
         );
+
+        tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
     }
 };
 
