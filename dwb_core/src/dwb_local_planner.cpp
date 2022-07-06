@@ -232,8 +232,10 @@ DWBLocalPlanner::setPlan(const nav_msgs::msg::Path & path)
 {
   yarp::os::Bottle msg_in;
   nav_msgs::msg::Path CoM_path;
+  nav_msgs::msg::Path downsampled_CoM_path;
   CoM_path.header.stamp = clock_->now();
   CoM_path.header.frame_id = "odom";
+  downsampled_CoM_path.header = CoM_path.header;
   reader_port.read(msg_in);
   int n = msg_in.size();
   geometry_msgs::msg::PoseStamped pose_tmp;
@@ -251,16 +253,34 @@ DWBLocalPlanner::setPlan(const nav_msgs::msg::Path & path)
     pose_tmp.pose.position.x = msg_in.get(i).asFloat64();
     pose_tmp.pose.position.y = msg_in.get(i+1).asFloat64();
     CoM_path.poses.push_back(pose_tmp);
+    //DOWNSAMPLE
+    if (downsampled_CoM_path.poses.empty())     //is it the first pose?
+    {
+      downsampled_CoM_path.poses.push_back(pose_tmp);
+    }
+    else if (i+3 == n && i!=0)                   //is it the last pose?
+    {
+      downsampled_CoM_path.poses.push_back(pose_tmp);
+    }
+    else
+    {
+      double poses_distance = sqrt(std::pow(downsampled_CoM_path.poses.back().pose.position.x - CoM_path.poses.back().pose.position.x, 2) + 
+                              std::pow(downsampled_CoM_path.poses.back().pose.position.y - CoM_path.poses.back().pose.position.y, 2));
+      if (poses_distance >= 0.01 )
+      {
+        downsampled_CoM_path.poses.push_back(pose_tmp);
+      }
+    }
   }
-  auto path2d = nav_2d_utils::pathToPath2D(CoM_path);
-  //auto path2d = nav_2d_utils::pathToPath2D(path);
+  //auto path2d = nav_2d_utils::pathToPath2D(CoM_path);
+  auto path2d = nav_2d_utils::pathToPath2D(downsampled_CoM_path);
   for (TrajectoryCritic::Ptr & critic : critics_) {
     critic->reset();
   }
 
   traj_generator_->reset();
 
-  pub_->publishLocalPlan(path2d);
+  //pub_->publishLocalPlan(path2d);
   global_plan_ = path2d;
 }
 
