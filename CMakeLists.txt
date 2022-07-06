@@ -97,6 +97,7 @@ ament_target_dependencies(setpoint_converter
   "tf2_ros"
   "tf2_msgs"
   "tf2"
+  "nav2_util"
 )
 
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
