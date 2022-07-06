@@ -70,15 +70,20 @@ private:
    void msg_callback(const nav_msgs::msg::Path::ConstPtr& msg_in)
     {
         yarp::os::Bottle msg_out;
-        // Need to transform the path from map frame to odom frame
-        //double x_goal_map = msg_in->poses.back().pose.position.x;
-        //double y_goal_map = msg_in->poses.back().pose.position.y;
-        //geometry_msgs::msg::TransformStamped tf = tf_buffer_in->lookupTransform("odom", "map", rclcpp::Time(0), 200ms);
-        geometry_msgs::msg::PoseStamped goal_odom;
-        tf_buffer_in->transform(msg_in->poses.back(), goal_odom, "odom", 200ms);
-        
-        msg_out.addFloat64(goal_odom.pose.position.x);
-        msg_out.addFloat64(goal_odom.pose.position.y);
+        // Need to transform the path from map frame to robot frame
+        geometry_msgs::msg::PoseStamped goal_robot;
+        //tf_buffer_in->transform(msg_in->poses.back(), goal_robot, "chest", 200ms);    //goal pose in robot frame: could throw exception for extrapolation into the future
+        try
+        {
+            geometry_msgs::msg::TransformStamped  TF = tf_buffer_in->lookupTransform("chest", msg_in->header.frame_id, rclcpp::Time(0), 300ms);
+            tf2::doTransform(msg_in->poses.back(), goal_robot, TF);
+        }
+        catch(const std::exception& e)
+        {
+            RCLCPP_ERROR(this->get_logger(), "Transform Exception: %s \n", e.what());
+        }
+        msg_out.addFloat64(goal_robot.pose.position.x);
+        msg_out.addFloat64(goal_robot.pose.position.y);
         RCLCPP_INFO(this->get_logger(), "Setpoint x: %f y: %f \n", msg_out.get(0).asFloat64(), msg_out.get(1).asFloat64());
 
         port.write(msg_out);
