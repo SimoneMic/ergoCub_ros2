@@ -80,6 +80,19 @@ ament_target_dependencies(scan_filter
 )
 target_link_libraries(scan_filter ${PCL_LIBRARIES})
 
+add_executable(scan_filter_simple src/scan_filtering_ros2_simple.cpp)
+ament_target_dependencies(scan_filter_simple
+  "std_msgs"
+  "tf2_ros"
+  "tf2"
+  "tf2_msgs"
+  "rclcpp"
+  "laser_geometry"
+  "pcl_conversions"
+  "sensor_msgs"
+)
+target_link_libraries(scan_filter_simple ${PCL_LIBRARIES})
+
 add_executable(chest_projection src/chest_projection.cpp)
 ament_target_dependencies(chest_projection
   "std_msgs"
@@ -160,6 +173,7 @@ endif()
 install(TARGETS
   managed_odom
   scan_filter
+  scan_filter_simple
   odometry_standalone
   chest_projection
   setpoint_converter

@@ -21,7 +21,7 @@ def generate_launch_description():
         ),
         Node(
             package='ergoCub_ros2',
-            executable='scan_filter',
+            executable='scan_filter_simple',
             output='screen',
             parameters=[{'use_sim_time': use_sim_time}]
         ),

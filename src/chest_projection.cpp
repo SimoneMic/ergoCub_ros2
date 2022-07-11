@@ -21,7 +21,7 @@ private:
     /* const */
     const char* reader_port_name = "/chest_projector/wrench_reader:i";
     const char* writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double loopFreq = 15.0;
+    const double loopFreq = 50.0;
     const char* chest_link = "chest";
     /* msgs */
     geometry_msgs::msg::TransformStamped TF;
@@ -108,7 +108,7 @@ bool ChestProjection::get_TF(const char* target_link, const char* source_link)
             try
             {
                 //std::cout << "looking for transform \n";
-                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 300ms); // target link = chest
+                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
                 return true;
             }
             catch (tf2::TransformException &ex)

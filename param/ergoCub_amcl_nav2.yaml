@@ -6,7 +6,7 @@ amcl:
     alpha3: 0.05
     alpha4: 0.05
     alpha5: 0.1
-    base_frame_id: "r_sole" #"r_sole" # projection
+    base_frame_id: "projection" #"r_sole" # projection
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -30,7 +30,7 @@ amcl:
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
-    transform_tolerance: 0.1
+    transform_tolerance: 0.3
     update_min_a: 0.5 #0.2
     update_min_d: 0.2 #0.25  
     z_hit: 0.9
