@@ -15,22 +15,24 @@ class CoM_trajectory_publisher : public rclcpp::Node
 {
 private:
     const std::string yarp_trajectory_port = "/planned_CoM/data:o";
-    const std::string port_name = "/CoM_trajectory_publisher/reader:i";
+    const std::string port_name = "/CoM_trajectory_publisher_test/reader:i";
     yarp::os::Port reader_port;
 
-    const std::string topic_name = "/CoM_planned_trajectory";
+    const std::string topic_name = "/CoM_planned_trajectory_test";
 
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr downsampled_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr left_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr right_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
 
     void callback()
     {
         //Feet pos tracker and notable points
-        nav2_msgs::msg::Path left_extremes;
-        nav2_msgs::msg::Path right_extremes;
-        nav2_msgs::msg::Path extremes_points;   
-        nav2_msgs::msg::Path center_points;
+        nav_msgs::msg::Path left_extremes;
+        nav_msgs::msg::Path right_extremes;
+        nav_msgs::msg::Path extremes_points;   
+        nav_msgs::msg::Path center_points;
         //Std
         yarp::os::Bottle msg_in;
         nav_msgs::msg::Path CoM_path;
@@ -135,11 +137,12 @@ private:
                 double interpolated_center_x = right_extremes.poses.back().pose.position.x - left_extremes.poses.back().pose.position.x;
             }
         }
- 
 
         RCLCPP_INFO(this->get_logger(), "Downsized CoM trajectory (%i) \n", downsampled_CoM_path.poses.size());
         pub_->publish(CoM_path);
         downsampled_pub_->publish(downsampled_CoM_path);
+        left_pub_->publish(left_extremes);
+        right_pub_->publish(right_extremes);
     }
 
 public:
@@ -149,6 +152,8 @@ public:
         yarp::os::Network::connect(yarp_trajectory_port, port_name);
         pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name, 10);
         downsampled_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_downsampled", 10);
+        left_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_left", 10);
+        right_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_right", 10);
         auto duration = std::chrono::duration<double>(1.0);
         timer_ = this->create_wall_timer(duration, std::bind(& CoM_trajectory_publisher::callback, this));
         RCLCPP_INFO(this->get_logger(), "Created Node\n");

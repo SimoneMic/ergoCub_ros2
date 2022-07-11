@@ -6,7 +6,7 @@ amcl:
     alpha3: 0.05
     alpha4: 0.05
     alpha5: 0.1
-    base_frame_id: "r_sole" # projection
+    base_frame_id: "r_sole" #"r_sole" # projection
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -21,7 +21,7 @@ amcl:
     max_particles: 3000
     min_particles: 500
     odom_frame_id: "odom"
-    pf_err: 0.05
+    pf_err: 0.01  #0.05
     pf_z: 0.99
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
@@ -31,13 +31,13 @@ amcl:
     sigma_hit: 0.2
     tf_broadcast: true
     transform_tolerance: 0.1
-    update_min_a: 0.2
-    update_min_d: 0.25
+    update_min_a: 0.5 #0.2
+    update_min_d: 0.2 #0.25  
     z_hit: 0.9
     z_max: 0.05
-    z_rand: 0.5
+    z_rand: 0.05
     z_short: 0.1
-    scan_topic: scan     #filtered_scan
+    scan_topic: filtered_scan     #filtered_scan
     map_topic: map
     set_initial_pose: true
     initial_pose: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
