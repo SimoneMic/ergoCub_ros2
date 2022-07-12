@@ -22,19 +22,20 @@ class ScanFilter : public rclcpp::Node
 {
 private:
     const std::string referece_frame = "r_sole";
-    const char* scan_topic = "/scan";
-    const char* pub_topic = "/filtered_pc2";
+    const std::string scan_topic = "/scan";
+    const std::string pub_topic = "/filtered_pc2";
     laser_geometry::LaserProjection projector_;
 
     const float filter_z_low = 0.2;
     const float filter_z_high = 3.0;
     const float sensor_height = 1.5;
-    const char* right_sole_frame = "r_sole";
-    const char* left_sole_frame = "l_sole";
+    const std::string right_sole_frame = "r_sole";
+    const std::string left_sole_frame = "l_sole";
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr raw_pointcloud_pub;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr raw_scan_sub;
 
     void scan_callback(const sensor_msgs::msg::LaserScan::ConstPtr& scan_in)
@@ -46,13 +47,14 @@ private:
         //Transforms it to the reference frame
         try
         {
-            tf_buffer_in->transform(cloud, referece_frame, tf2::durationFromSec((0.1)));
+            cloud = tf_buffer_in->transform(cloud, referece_frame, tf2::durationFromSec((0.1)));
         }
         catch(const std::exception& e)
         {
             RCLCPP_WARN(get_logger(), "Failed to transform scan cloud: %s \n",  e.what());
             return;
         }
+        raw_pointcloud_pub->publish(cloud);     //debug
         // Filter cloud.
         pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZ>);
@@ -93,6 +95,7 @@ public:
     ScanFilter() : Node("scan_filtering_node")
     {
         pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 10);
+        raw_pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "_raw", 10);
         tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
 
