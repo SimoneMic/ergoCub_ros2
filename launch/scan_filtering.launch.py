@@ -21,7 +21,7 @@ def generate_launch_description():
         ),
         Node(
             package='ergoCub_ros2',
-            executable='scan_filter_simple',
+            executable='scan_filter',
             output='screen',
             parameters=[{'use_sim_time': use_sim_time}]
         ),
@@ -31,15 +31,15 @@ def generate_launch_description():
                         ('scan', '/filtered_scan')],
             parameters=[{
                 'target_frame': 'lidar',
-                'transform_tolerance': 0.01,
+                'transform_tolerance': 0.01,        #0.01
                 'min_height': -300.0,  #-300
                 'max_height': 300.0,  #300
                 'angle_min': -3.141592653,  # -M_PI
                 'angle_max': 3.141592653,  # M_PI
                 'angle_increment': 0.003926991,  # 2M_PI/360.0
                 'scan_time': 0.1,
-                'range_min': 0.1,
-                'range_max': 25.0,
+                'range_min': 0.2,
+                'range_max': 24.0,
                 'use_inf': True,
                 'inf_epsilon': 1.0
                 #'concurrency_level': 2
