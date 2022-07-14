@@ -64,7 +64,8 @@ bool Estimator_odom::get_TF(const char* target_link)
             try
             {
                 //std::cout << "looking for transform \n";
-                TF = tf_buffer_in->lookupTransform(root_link_name, target_link, rclcpp::Time(0), 100ms); // target link = chest rclcpp::Time(0)
+                //TF = tf_buffer_in->lookupTransform(root_link_name, target_link, rclcpp::Time(0), 100ms); // target link = chest rclcpp::Time(0)
+                TF = tf_buffer_in->lookupTransform(target_link, root_link_name, rclcpp::Time(0), 100ms);
                 RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
                                                                                                     TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
                 return true;
@@ -108,36 +109,53 @@ bool Estimator_odom::compute_odom()
         // TF Translation
         odom_tf.transform.translation.x = in_bottle.get(0).asFloat64() - initial_offset_x - TF.transform.translation.x;
         odom_tf.transform.translation.y = in_bottle.get(1).asFloat64() - initial_offset_y - TF.transform.translation.y;
-        odom_tf.transform.translation.z = in_bottle.get(2).asFloat64() - TF.transform.translation.z;    
+        odom_tf.transform.translation.z = in_bottle.get(2).asFloat64() + TF.transform.translation.z; 
+        //odom_tf.transform.translation.z = in_bottle.get(2).asFloat64() - TF.transform.translation.z;    
         //odom_tf.transform.translation.x = in_bottle.get(0).asFloat64() - TF.transform.translation.x;
         //odom_tf.transform.translation.y = in_bottle.get(1).asFloat64() - TF.transform.translation.y;
         //odom_tf.transform.translation.z = in_bottle.get(2).asFloat64() - TF.transform.translation.z;
         // TF Rotation
-        tf2::Quaternion q_root_wrt_odom;        //root_link with referece to odom frame -> unknown
-        tf2::Quaternion q_chest_wrt_root;       //chest link with reference to root_link -> got from TF
-        tf2::fromMsg(TF.transform.rotation, q_chest_wrt_root);  //conversion
-        tf2::Quaternion q_chest_wrt_odom;       //chest orientation wrt to odom frame -> got from IMU or Estimator
-        
-        //q_chest_wrt_odom.setRPY(imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(0).asFloat64()* 0.0174533,
-        //                        imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(1).asFloat64()* 0.0174533,
+        //tf2::Quaternion q_root_wrt_odom;        //root_link with referece to odom frame -> unknown
+        //tf2::Quaternion q_chest_wrt_root;       //chest link with reference to root_link -> got from TF
+        //tf2::fromMsg(TF.transform.rotation, q_chest_wrt_root);  //conversion
+        //tf2::Quaternion q_chest_wrt_odom;       //chest orientation wrt to odom frame -> got from IMU or Estimator
+        //
+        //q_chest_wrt_odom.setRPY(//imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(0).asFloat64()* 0.0174533,
+        //                        //imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(1).asFloat64()* 0.0174533,
+        //                        0,
+        //                        0,
         //                        imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);  //using only imu data
+//
+        ////q_chest_wrt_odom.setRPY(-in_bottle.get(5).asFloat64()* 0.0174533, 
+        ////                        in_bottle.get(3).asFloat64()* 0.0174533, 
+        ////                        -in_bottle.get(4).asFloat64()* 0.0174533);   //From estimator (should be 3 -4 -5 index. but imu is misplaced in urdf)
+        //
+        //tf2::Quaternion q_root_wrt_chest;   //conjugate of q_chest_wrt_root
+        //q_root_wrt_chest.setX(-q_chest_wrt_root.x());
+        //q_root_wrt_chest.setY(-q_chest_wrt_root.y());
+        //q_root_wrt_chest.setZ(-q_chest_wrt_root.z());
+        //q_root_wrt_chest.setW(q_chest_wrt_root.w());
+//
+        //q_root_wrt_odom = q_root_wrt_chest * q_chest_wrt_odom;
+        ////RCLCPP_INFO(this->get_logger(), "q_root_wrt_odom x: %f - y: %f - z: %f - w: %f \n", q_root_wrt_odom.x(), q_root_wrt_odom.y(), q_root_wrt_odom.z(), q_root_wrt_odom.w());
+        //odom_tf.transform.rotation.x = q_root_wrt_odom.x();
+        //odom_tf.transform.rotation.y = q_root_wrt_odom.y();
+        //odom_tf.transform.rotation.z = q_root_wrt_odom.z();
+        //odom_tf.transform.rotation.w = q_root_wrt_odom.w();
 
-        q_chest_wrt_odom.setRPY(in_bottle.get(3).asFloat64()* 0.0174533, 
-                                in_bottle.get(4).asFloat64()* 0.0174533, 
-                                in_bottle.get(5).asFloat64()* 0.0174533);   //From estimator
-        
-        tf2::Quaternion q_root_wrt_chest;   //conjugate of q_chest_wrt_root
-        q_root_wrt_chest.setX(-q_chest_wrt_root.x());
-        q_root_wrt_chest.setY(-q_chest_wrt_root.y());
-        q_root_wrt_chest.setZ(-q_chest_wrt_root.z());
-        q_root_wrt_chest.setW(q_chest_wrt_root.w());
+        /* Old Code */
+        tf2::Quaternion new_quat;   //imu quat in root_link frame
+        tf2::Quaternion tf_quat;    //quat of the chest frame
+        tf2::fromMsg(TF.transform.rotation, tf_quat);
+        tf2::Quaternion q;  //temp
+        //std::cout << "computing quaternion \n";
+        q.setRPY(0, 0, imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);
+        new_quat = q * tf_quat;
 
-        q_root_wrt_odom = q_root_wrt_chest * q_chest_wrt_odom;
-        //RCLCPP_INFO(this->get_logger(), "q_root_wrt_odom x: %f - y: %f - z: %f - w: %f \n", q_root_wrt_odom.x(), q_root_wrt_odom.y(), q_root_wrt_odom.z(), q_root_wrt_odom.w());
-        odom_tf.transform.rotation.x = q_root_wrt_odom.x();
-        odom_tf.transform.rotation.y = q_root_wrt_odom.y();
-        odom_tf.transform.rotation.z = q_root_wrt_odom.z();
-        odom_tf.transform.rotation.w = q_root_wrt_odom.w();
+        odom_tf.transform.rotation.x = new_quat.x();
+        odom_tf.transform.rotation.y = new_quat.y();
+        odom_tf.transform.rotation.z = new_quat.z();
+        odom_tf.transform.rotation.w = new_quat.w();
 
         // odom msg
         odom_msg.pose.pose.orientation = odom_tf.transform.rotation;
