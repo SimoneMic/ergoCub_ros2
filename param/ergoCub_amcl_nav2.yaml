@@ -1,11 +1,11 @@
 amcl:
   ros__parameters:
     use_sim_time: true
-    alpha1: 0.005  #0.3
-    alpha2: 0.005
-    alpha3: 0.005
-    alpha4: 0.005
-    alpha5: 0.01
+    alpha1: 0.1  #0.3
+    alpha2: 0.05
+    alpha3: 0.05
+    alpha4: 0.05
+    alpha5: 0.1
     base_frame_id: "r_sole" #"r_sole" # projection
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
@@ -21,8 +21,8 @@ amcl:
     max_particles: 3000
     min_particles: 500
     odom_frame_id: "odom"
-    pf_err: 0.01  #0.05
-    pf_z: 0.99
+    pf_err: 0.05  #0.05
+    pf_z: 0.6
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
     resample_interval: 2
