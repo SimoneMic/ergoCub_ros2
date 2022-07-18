@@ -27,11 +27,13 @@ private:
 
     const std::string port_name = "/setopint_converter/talker:o";
     const std::string server_name = "/walking-coordinator/goal:i";
+
+    bool send_goal;
 public:
     YarpFeetDataProcessor()
     {
         on_double_support = false;
-
+        send_goal = false;
         port.open(port_name);
         yarp::os::Network::connect(port_name, server_name);     //todo - check for connection or errors
     };
@@ -39,6 +41,13 @@ public:
     void storePath(yarp::os::Bottle &msg)
     {
         transformed_goal_ = msg;
+        send_goal = true;
+    }
+
+    //set the internal flag to whether send the goal or not
+    void set_permission(bool val)
+    {
+        send_goal = val;
     }
 
     bool read(yarp::os::ConnectionReader& connection) override
@@ -46,24 +55,37 @@ public:
         yarp::os::Bottle b;
         bool ok = b.read(connection);
         if (!ok) {
-            //std::cout<<
+            std::cout << "Bad Yarp connection \n";
             return false;
         }
         //Condition for double support -> Should also check if in the middle of the CoM path during oscillation???
         if (b.get(0).asFloat64() > sensor_threshold && b.get(1).asFloat64() > sensor_threshold)
         {
+            
             //if I wasn't on double support before I can send data -> this means that it's the first time
             if (!on_double_support)
             {
                 on_double_support = true;
-
+                std::cout << "On Double Support! \n";
                 //check for data sanity before transmitting it
                 //todo
+                if (send_goal)
+                {
+                    std::cout << "Passing Goal \n";
+                    port.write(transformed_goal_);  //send data only once per double support
+                    send_goal = false;
+                }
+            }
+            else if (on_double_support && send_goal)
+            {
+                std::cout << "Passing Goal \n";
                 port.write(transformed_goal_);  //send data only once per double support
+                send_goal = false;
             }
         }
         else
         {
+            std::cout << "Not in double Support \n";
             on_double_support = false;
         }
         return true;
@@ -151,6 +173,7 @@ private:
         //I should publish the command only when the robot is in double support -> other callback
         //port.write(msg_out);
         processor.storePath(msg_out);
+        processor.set_permission(true);
     }
 public:
     SetpointConverter() : rclcpp::Node("setpoint_converter_node")
