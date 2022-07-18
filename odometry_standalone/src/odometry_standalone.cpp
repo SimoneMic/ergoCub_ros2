@@ -66,8 +66,8 @@ bool Estimator_odom::get_TF(const char* target_link, const char* source_link)
                 //std::cout << "looking for transform \n";
                 //TF = tf_buffer_in->lookupTransform(root_link_name, target_link, rclcpp::Time(0), 100ms); // target link = chest rclcpp::Time(0)
                 TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms);
-                RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
-                                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
+                //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
+                //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
                 return true;
             }
             catch (tf2::TransformException &ex)

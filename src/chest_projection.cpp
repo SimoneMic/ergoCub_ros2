@@ -80,7 +80,7 @@ void ChestProjection::timer_callback()
 
         virtual_unicycle_base_tf.header.frame_id = foot_link;
 
-        RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
+        //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
     else if (in_bottle.get(1).asFloat64() > 100.0 && in_bottle.get(0).asFloat64() < 100.0)
     {
@@ -88,7 +88,7 @@ void ChestProjection::timer_callback()
         projection_TF.header.frame_id = foot_link;
 
         virtual_unicycle_base_tf.header.frame_id = foot_link;
-        RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
+        //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
     // Get TF
     if (!get_TF(foot_link, chest_link))     //get_TF(chest_link, foot_link)
