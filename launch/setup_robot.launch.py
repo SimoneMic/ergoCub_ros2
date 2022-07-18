@@ -32,11 +32,17 @@ def generate_launch_description():
             get_package_share_directory('ergoCub_ros2'), 'launch'),
             '/chest_projection.launch.py'])
         )
+    scan_filtering_compensated = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ergoCub_ros2'), 'launch'),
+            '/scan_filtering_compensated.launch.py'])
+        )
 
     return LaunchDescription([
         state_publisher,
-        scan_filtering,
+        #scan_filtering,
         projection_node,
         rviz_node,
+        scan_filtering_compensated,
         odom_node
     ])

@@ -6,7 +6,7 @@ amcl:
     alpha3: 0.05
     alpha4: 0.05
     alpha5: 0.1
-    base_frame_id: "r_sole" #"r_sole" # projection
+    base_frame_id: "virtual_unicycle_base" #"r_sole" # projection
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -37,7 +37,7 @@ amcl:
     z_max: 0.05
     z_rand: 0.5   #0.05
     z_short: 0.1
-    scan_topic: filtered_scan     #filtered_scan
+    scan_topic: filtered_scan_compensated     #filtered_scan
     map_topic: map
     set_initial_pose: true
     initial_pose: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}

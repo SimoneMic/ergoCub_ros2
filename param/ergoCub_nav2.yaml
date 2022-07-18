@@ -2,7 +2,7 @@ bt_navigator:
   ros__parameters:
     use_sim_time: True
     global_frame: map
-    robot_base_frame: projection   #base_link
+    robot_base_frame: virtual_unicycle_base #projection   #base_link
     odom_topic: /estimated_odom
     default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
     bt_loop_duration: 10
@@ -195,7 +195,7 @@ local_costmap:
       update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
-      robot_base_frame: projection
+      robot_base_frame: virtual_unicycle_base #projection
       use_sim_time: True
       rolling_window: true
       width: 3
@@ -214,7 +214,7 @@ global_costmap:
       update_frequency: 1.0
       publish_frequency: 1.0
       global_frame: map
-      robot_base_frame: projection
+      robot_base_frame: virtual_unicycle_base #projection
       use_sim_time: True
       robot_radius: 0.1
       resolution: 0.05
@@ -225,7 +225,7 @@ global_costmap:
         enabled: True
         observation_sources: scan
         scan:
-          topic: /filtered_scan   #scan
+          topic: filtered_scan_compensated #/filtered_scan   #scan
           max_obstacle_height: 2.5  #2.0
           clearing: True
           marking: True
@@ -245,7 +245,7 @@ global_costmap:
         mark_threshold: 0
         observation_sources: scan
         scan:
-          topic: /filtered_scan   #scan
+          topic: filtered_scan_compensated #/filtered_scan   #scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -286,7 +286,7 @@ planner_server:
   ros__parameters:
     planner_plugins: ['GridBased']
     use_sim_time: True
-    expected_planner_frequency: 1.0   #20.0
+    expected_planner_frequency: 10.0   #20.0
     GridBased:
       plugin: 'nav2_navfn_planner/NavfnPlanner'
       use_astar: True
@@ -346,7 +346,7 @@ recoveries_server:
     wait:
       plugin: "nav2_recoveries/Wait"
     global_frame: odom
-    robot_base_frame: projection
+    robot_base_frame: virtual_unicycle_base #projection
     transform_timeout: 0.1
     use_sim_time: True
     simulate_ahead_time: 2.0
@@ -394,7 +394,7 @@ behavior_server:
     wait:
       plugin: "nav2_behaviors/Wait"
     global_frame: odom
-    robot_base_frame: base_link
+    robot_base_frame: virtual_unicycle_base #base_link
     transform_tolerance: 0.1
     use_sim_time: true
     simulate_ahead_time: 2.0

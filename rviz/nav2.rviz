@@ -5,8 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /TF1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /LaserScan1
         - /Bumper Hit1
         - /PointCloud21
         - /Path2
@@ -60,256 +62,20 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /robot_description
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        camera_tilt:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        chest:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        head:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        imu_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_ankle_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_ankle_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_elbow_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_foot_front:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_foot_rear:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_forearm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_hand:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_hip_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_hip_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_hip_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_lower_leg:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_shoulder_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_shoulder_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_shoulder_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_sole:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_upper_arm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_upper_leg:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_wrist_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        lidar:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        neck_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        neck_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        neck_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_ankle_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_ankle_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_elbow_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_foot_front:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_foot_rear:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_forearm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_hand:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_hip_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_hip_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_hip_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_lower_leg:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_shoulder_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_shoulder_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_shoulder_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_sole:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        r_upper_arm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_upper_leg:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_wrist_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        root_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        torso_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        torso_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
-      Value: true
+      Value: false
       Visual Enabled: true
     - Class: rviz_default_plugins/TF
       Enabled: true
@@ -317,106 +83,108 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_link:
-          Value: true
+          Value: false
         camera_tilt:
-          Value: true
+          Value: false
         chest:
           Value: true
         head:
-          Value: true
+          Value: false
         imu_frame:
-          Value: true
+          Value: false
         l_ankle_1:
-          Value: true
+          Value: false
         l_ankle_2:
-          Value: true
+          Value: false
         l_elbow_1:
-          Value: true
+          Value: false
         l_foot_front:
-          Value: true
+          Value: false
         l_foot_rear:
-          Value: true
+          Value: false
         l_forearm:
-          Value: true
+          Value: false
         l_hand:
-          Value: true
+          Value: false
         l_hip_1:
-          Value: true
+          Value: false
         l_hip_2:
-          Value: true
+          Value: false
         l_hip_3:
-          Value: true
+          Value: false
         l_lower_leg:
-          Value: true
+          Value: false
         l_shoulder_1:
-          Value: true
+          Value: false
         l_shoulder_2:
-          Value: true
+          Value: false
         l_shoulder_3:
-          Value: true
+          Value: false
         l_sole:
           Value: true
         l_upper_arm:
-          Value: true
+          Value: false
         l_upper_leg:
-          Value: true
+          Value: false
         l_wrist_1:
-          Value: true
+          Value: false
         lidar:
-          Value: true
+          Value: false
         map:
           Value: true
         neck_1:
-          Value: true
+          Value: false
         neck_2:
-          Value: true
+          Value: false
         neck_3:
-          Value: true
+          Value: false
         odom:
           Value: true
         projection:
           Value: true
         r_ankle_1:
-          Value: true
+          Value: false
         r_ankle_2:
-          Value: true
+          Value: false
         r_elbow_1:
-          Value: true
+          Value: false
         r_foot_front:
-          Value: true
+          Value: false
         r_foot_rear:
-          Value: true
+          Value: false
         r_forearm:
-          Value: true
+          Value: false
         r_hand:
-          Value: true
+          Value: false
         r_hip_1:
-          Value: true
+          Value: false
         r_hip_2:
-          Value: true
+          Value: false
         r_hip_3:
-          Value: true
+          Value: false
         r_lower_leg:
-          Value: true
+          Value: false
         r_shoulder_1:
-          Value: true
+          Value: false
         r_shoulder_2:
-          Value: true
+          Value: false
         r_shoulder_3:
-          Value: true
+          Value: false
         r_sole:
           Value: true
         r_upper_arm:
-          Value: true
+          Value: false
         r_upper_leg:
-          Value: true
+          Value: false
         r_wrist_1:
-          Value: true
+          Value: false
         root_link:
-          Value: true
+          Value: false
         torso_1:
-          Value: true
+          Value: false
         torso_2:
+          Value: false
+        virtual_unicycle_base:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -453,6 +221,8 @@ Visualization Manager:
                             r_foot_rear:
                               r_sole:
                                 projection:
+                                  {}
+                                virtual_unicycle_base:
                                   {}
               torso_1:
                 torso_2:
@@ -496,8 +266,8 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz_default_plugins/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 255; 0; 0
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -517,7 +287,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /scan
+        Value: /filtered_scan_compensated
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -533,7 +303,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: ""
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -554,7 +324,7 @@ Visualization Manager:
         Value: /mobile_base/sensors/bumper_pointcloud
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz_default_plugins/Map
       Color Scheme: map
@@ -929,7 +699,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: ""
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -950,7 +720,7 @@ Visualization Manager:
         Value: /mobile_base/sensors/bumper_pointcloud
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -977,7 +747,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /CoM_planned_trajectory_test_downsampled
+        Value: /local_plan
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -1005,7 +775,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /CoM_planned_trajectory_test_left
+        Value: /plan
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -1073,25 +843,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 3.1108598709106445
+      Distance: 5.175455570220947
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.2983438968658447
-        Y: -0.06922925263643265
-        Z: 0.18286097049713135
+        X: -0.6469776630401611
+        Y: 0.0583936981856823
+        Z: -0.7110992074012756
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5747970938682556
+      Pitch: 1.4197953939437866
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 1.0192114114761353
+      Yaw: 0.01921333372592926
     Saved: ~
 Window Geometry:
   Displays:

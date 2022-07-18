@@ -46,9 +46,10 @@ public:
         yarp::os::Bottle b;
         bool ok = b.read(connection);
         if (!ok) {
+            //std::cout<<
             return false;
         }
-        //Condition for double support
+        //Condition for double support -> Should also check if in the middle of the CoM path during oscillation???
         if (b.get(0).asFloat64() > sensor_threshold && b.get(1).asFloat64() > sensor_threshold)
         {
             //if I wasn't on double support before I can send data -> this means that it's the first time
@@ -65,12 +66,9 @@ public:
         {
             on_double_support = false;
         }
-        
         return true;
     }
 };
-
-
 
 
 class SetpointConverter : public rclcpp::Node
@@ -137,6 +135,7 @@ private:
         //tf_buffer_in->transform(msg_in->poses.back(), goal_robot, "chest", 200ms);    //goal pose in robot frame: could throw exception for extrapolation into the future
         try
         {
+            //
             geometry_msgs::msg::TransformStamped  TF = tf_buffer_in->lookupTransform("root_link", msg_in->header.frame_id, rclcpp::Time(0), 100ms);
             TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller
             //todo: implement a slicing of the path
@@ -157,7 +156,7 @@ public:
     SetpointConverter() : rclcpp::Node("setpoint_converter_node")
     {
         // Network Setup
-        yarp::os::Network yarp;
+        //yarp::os::Network yarp;
         
         setpoint_sub_ = this->create_subscription<nav_msgs::msg::Path>(
             topic_name,
@@ -180,6 +179,8 @@ int main(int argc, char** argv)
 {
     // Init ROS2
     rclcpp::init(argc, argv);
+    //Init YARP
+    yarp::os::Network yarp;
 
     // Start listening in polling
     if (rclcpp::ok())
