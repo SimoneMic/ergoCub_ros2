@@ -23,9 +23,9 @@ using yarp::os::Bottle;
 class Estimator_odom : public rclcpp::Node
 {
 private:
-    const char* reader_port_name = "/estimator_odom/odom_reader";
+    const char* reader_port_name = "/estimator_odom/odom_reader:i";
     const char* writer_port = "/base-estimator/floating_base/state:o";
-    const char* imu_reader_port_name = "/estimator_odom/imu_reader";
+    const char* imu_reader_port_name = "/estimator_odom/imu_reader:i";
     const char* imu_writer_port = "/icubSim/chest/inertials/measures:o";
     yarp::os::Port odom_reader_port;
     yarp::os::Port imu_reader_port;
@@ -50,9 +50,15 @@ private:
     bool xy_offsets_computed, yaw_offsets_computed;
     double initial_offset_x, initial_offset_y, initial_offset_yaw;
     const double loopFreq = 30.0;
+
+    yarp::os::Port contacts_reader_port;
+    const std::string contacts_reader_port_name = "/estimator_odom/contact_reader:i";
+    const std::string contacts_server_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
+    const double sensor_threshold = 100.0;
+    char* foot_link;
 public:
     Estimator_odom();
-    bool get_TF(const char* target_link);
+    bool get_TF(const char* target_link,const char* source_link);
     bool compute_odom();
     bool publish_odom();
     void timer_callback();
