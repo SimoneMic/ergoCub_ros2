@@ -67,6 +67,16 @@ ament_target_dependencies(odometry_standalone
 )
 target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/odometry_standalone/include)
 
+add_executable(odom_GT src/odom_GT.cpp)
+ament_target_dependencies(odom_GT
+  "std_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "YARP"
+  "nav_msgs"
+  "rclcpp"
+)
+
 add_executable(scan_filter src/scan_filtering_ros2.cpp)
 ament_target_dependencies(scan_filter
   "std_msgs"
@@ -190,6 +200,7 @@ install(TARGETS
   scan_filter_compensated
   scan_filter_simple
   odometry_standalone
+  odom_GT
   chest_projection
   setpoint_converter
   CoM_trajectory_publisher
