@@ -67,6 +67,17 @@ ament_target_dependencies(odometry_standalone
 )
 target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/odometry_standalone/include)
 
+add_executable(odometry_callback odometry_callback/main.cpp odometry_callback/src/odometry_callback.cpp)
+ament_target_dependencies(odometry_callback
+  "std_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "YARP"
+  "nav_msgs"
+  "rclcpp"
+)
+target_include_directories(odometry_callback PRIVATE ${CMAKE_SOURCE_DIR}/odometry_callback/include)
+
 add_executable(odom_GT src/odom_GT.cpp)
 ament_target_dependencies(odom_GT
   "std_msgs"
@@ -94,7 +105,6 @@ add_executable(scan_filter_compensated src/scan_filtering_ros2_compensated.cpp)
 ament_target_dependencies(scan_filter_compensated
   "std_msgs"
   "tf2_ros"
-  "tf2"
   "tf2_msgs"
   "rclcpp"
   "laser_geometry"
@@ -200,6 +210,7 @@ install(TARGETS
   scan_filter_compensated
   scan_filter_simple
   odometry_standalone
+  odometry_callback
   odom_GT
   chest_projection
   setpoint_converter

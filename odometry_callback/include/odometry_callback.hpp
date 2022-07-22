@@ -33,7 +33,7 @@ private:
 
 public:
     OdomPublisher();
-    bool get_TF(const const std::string &target_link,const const std::string &source_link, geometry_msgs::msg::TransformStamped &out);
+    bool get_TF(const std::string &target_link,const std::string &source_link, geometry_msgs::msg::TransformStamped &out);
     bool publish_odom(geometry_msgs::msg::TransformStamped &tf, nav_msgs::msg::Odometry &odom_msg);
 };
 

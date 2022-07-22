@@ -1,4 +1,5 @@
 #include "yarp/os/Bottle.h"
+#include "yarp/os/BufferedPort.h"
 #include "yarp/os/Port.h"
 #include "yarp/os/Network.h"
 #include "yarp/os/RpcClient.h"
@@ -16,11 +17,9 @@
 Command to use to merge ports:
 yarp merge --input /base-estimator/floating_base/state:o /icubSim/chest/inertials/measures:o /base-estimator/contacts/stateAndNormalForce:o --output /odometry_state:o
 */
-class YarpOdometryProcessor : public yarp::os::PortReader
+class YarpOdometryProcessor : public yarp::os::PortReader //yarp::os::BufferedPort<Bottle>
 {
 private:
-    /*Connectivity data */
-    std::unique_ptr<OdomPublisher> ros_;
     /*Constants*/
     const double sensor_threshold = 100.0;
     const std::string odom_frame_name = "odom";
@@ -35,6 +34,8 @@ private:
     geometry_msgs::msg::TransformStamped tf, odom_tf;
 
 public:
+    /*Connectivity data */
+    std::shared_ptr<OdomPublisher> ros_;
     YarpOdometryProcessor()
     {
         //port.open(server_name);
@@ -42,7 +43,7 @@ public:
         ros_ = std::make_unique<OdomPublisher>();
 
         //Ex Odom ros node
-        this->xy_offsets_computed = false;
+        xy_offsets_computed = false;
         this->initial_offset_x = 0;
         this->initial_offset_y = 0;
         /* set up odom msg */
@@ -67,8 +68,12 @@ public:
         this->foot_link = "r_sole"; 
     };
 
+    //using BufferedPort<Bottle>::onRead;
+    //void onRead(yarp::os::Bottle data)
+
     bool read(yarp::os::ConnectionReader& connection) override
     {
+        std::cout<< "onRead";
         yarp::os::Bottle data;
         bool ok = data.read(connection);
         if (!ok) {
@@ -80,22 +85,22 @@ public:
             //Compute odom initial offsets on X Y components
             if (! xy_offsets_computed)
             {
-                initial_offset_x = in_bottle.get(0).asFloat64();
-                initial_offset_y = in_bottle.get(1).asFloat64();
+                initial_offset_x = data.get(0).asFloat64();
+                initial_offset_y = data.get(1).asFloat64();
                 xy_offsets_computed = true;
             }
             //Find which foot is in contact with the ground -> for planarity
-            if (in_bottle.get(19).asFloat64() > sensor_threshold && in_bottle.get(20).asFloat64() < sensor_threshold)
+            if (data.get(19).asFloat64() > sensor_threshold && data.get(20).asFloat64() < sensor_threshold)
             {
                 //l_sole
                 foot_link = "l_sole"; 
             }
-            else if (in_bottle.get(19).asFloat64() < sensor_threshold && in_bottle.get(20).asFloat64() > sensor_threshold)
+            else if (data.get(19).asFloat64() < sensor_threshold && data.get(20).asFloat64() > sensor_threshold)
             {
                 //r_sole
                 foot_link = "r_sole"; 
             }
-            else if if (in_bottle.get(19).asFloat64() < sensor_threshold && in_bottle.get(20).asFloat64() < sensor_threshold)
+            else if (data.get(19).asFloat64() < sensor_threshold && data.get(20).asFloat64() < sensor_threshold)
             {
                 //TODO handle exception of-> when in double support do nothing, keep the previous value
             }
@@ -105,9 +110,9 @@ public:
             {
                 throw std::logic_error("Cannot get TF 1");
             }
-            odom_tf.transform.translation.x = in_bottle.get(0).asFloat64() - initial_offset_x - tf.transform.translation.x;
-            odom_tf.transform.translation.y = in_bottle.get(1).asFloat64() - initial_offset_y - tf.transform.translation.y;
-            odom_tf.transform.translation.z = in_bottle.get(2).asFloat64() + tf.transform.translation.z; 
+            odom_tf.transform.translation.x = data.get(0).asFloat64() - initial_offset_x - tf.transform.translation.x;
+            odom_tf.transform.translation.y = data.get(1).asFloat64() - initial_offset_y - tf.transform.translation.y;
+            odom_tf.transform.translation.z = data.get(2).asFloat64() + tf.transform.translation.z; 
             //Orientation
             if (! ros_->get_TF(foot_link, root_link_name, tf))  // updates the TF variable with the most recent tf
             {
@@ -119,7 +124,7 @@ public:
             double roll, pitch, yaw;
             m.getRPY(roll, pitch, yaw);
             tf2::Quaternion q_final;  //imu quaternion reading from sensor
-            q_final.setRPY(roll, pitch, imu_bottle.get(12).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);
+            q_final.setRPY(roll, pitch, data.get(12).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);
         
 
             odom_tf.transform.rotation.x = q_final.x();
@@ -132,21 +137,22 @@ public:
             odom_msg.pose.pose.position.x = odom_tf.transform.translation.x;
             odom_msg.pose.pose.position.y = odom_tf.transform.translation.y;
             odom_msg.pose.pose.position.z = odom_tf.transform.translation.z;
-            odom_msg.twist.twist.linear.x = in_bottle.get(6).asFloat64();
-            odom_msg.twist.twist.linear.y = in_bottle.get(7).asFloat64();
-            odom_msg.twist.twist.linear.z = in_bottle.get(8).asFloat64();
-            odom_msg.twist.twist.angular.x = in_bottle.get(9).asFloat64();
-            odom_msg.twist.twist.angular.y = in_bottle.get(10).asFloat64();
-            odom_msg.twist.twist.angular.z = in_bottle.get(11).asFloat64();
+            odom_msg.twist.twist.linear.x = data.get(6).asFloat64();
+            odom_msg.twist.twist.linear.y = data.get(7).asFloat64();
+            odom_msg.twist.twist.linear.z = data.get(8).asFloat64();
+            odom_msg.twist.twist.angular.x = data.get(9).asFloat64();
+            odom_msg.twist.twist.angular.y = data.get(10).asFloat64();
+            odom_msg.twist.twist.angular.z = data.get(11).asFloat64();
 
             // time stamps done when published
             //odom_msg.header.stamp = now(); // yarp::os::Time::now()
             //odom_tf.header.stamp = odom_msg.header.stamp;
+            std::cout << "Publishing odom" << "\n";
             ros_->publish_odom(odom_tf, odom_msg);
         }
         catch(const std::exception& e)
         {
-            RCLCPP_ERROR(this->get_logger(), "%s \n",e.what());
+            std::cerr << "Error: " << e.what() << "\n";
             return false;
         }
         return true;
