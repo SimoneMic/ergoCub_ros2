@@ -32,8 +32,8 @@ def generate_launch_description():
             parameters=[{
                 'target_frame': 'virtual_unicycle_base',
                 'transform_tolerance': 0.01,        #0.01
-                'min_height': -300.0,  #-300
-                'max_height': 300.0,  #300
+                'min_height': -0.2,  #-300
+                'max_height': 3.0,  #300
                 'angle_min': -3.141592653,  # -M_PI
                 'angle_max': 3.141592653,  # M_PI
                 'angle_increment': 0.003926991,  # 2M_PI/360.0
