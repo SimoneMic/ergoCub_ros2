@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <thread>
+#include <mutex>
 
 using namespace std::chrono_literals;
 
@@ -32,10 +33,11 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     /* YARP ports*/
     yarp::os::Port wrench_reader_port;
-    /* var */
+    /* ground contact var */
     std::string foot_link = "r_sole";
     //timer for loop
     rclcpp::TimerBase::SharedPtr timer_;
+    std::mutex m;
     void timer_callback();
     bool get_TF(const std::string &target_link, const std::string &source_link);
 
@@ -69,6 +71,7 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
 
 void ChestProjection::timer_callback()
 {
+    std::lock_guard<std::mutex> guard(m);   //lock
     // Check which foot is on the ground based on the contact sensors
     yarp::os::Bottle in_bottle;
     wrench_reader_port.read(in_bottle);
@@ -108,7 +111,6 @@ void ChestProjection::timer_callback()
     projection_TF.transform.translation.z = 0;
     projection_TF.transform.rotation = tf2::toMsg(tf_quat);
     //Computing of virtual unicycle base tf
-    virtual_unicycle_base_tf.header.stamp = projection_TF.header.stamp = now();
     virtual_unicycle_base_tf.transform.translation.x = projection_TF.transform.translation.x;
     //The translational Y component is the mean between the feet sole distance
     if (foot_link=="r_sole")
@@ -124,6 +126,8 @@ void ChestProjection::timer_callback()
     virtual_unicycle_base_tf.transform.translation.z = 0;
     virtual_unicycle_base_tf.transform.rotation = projection_TF.transform.rotation;
     std::vector<geometry_msgs::msg::TransformStamped> tf_buffer;
+    projection_TF.header.stamp = now();
+    virtual_unicycle_base_tf.header.stamp = projection_TF.header.stamp;
     tf_buffer.push_back(projection_TF);
     tf_buffer.push_back(virtual_unicycle_base_tf);
     tf_pub->sendTransform(tf_buffer);
@@ -139,6 +143,8 @@ bool ChestProjection::get_TF(const std::string &target_link, const std::string &
             try
             {
                 TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
+                //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
+                //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
                 return true;
             }
             catch (tf2::TransformException &ex)

@@ -29,29 +29,38 @@ private:
     bool xy_offsets_computed;
     double initial_offset_x, initial_offset_y;
     std::string foot_link;
-    nav_msgs::msg::Odometry odom_msg;
-    tf2::Quaternion imu_quat;
-    geometry_msgs::msg::TransformStamped tf, odom_tf;
+    //nav_msgs::msg::Odometry odom_msg;
+    //tf2::Quaternion imu_quat;
+    //geometry_msgs::msg::TransformStamped tf, odom_tf;
 
 public:
     /*Connectivity data */
     std::shared_ptr<OdomPublisher> ros_;
     YarpOdometryProcessor()
     {
-        //port.open(server_name);
-        //yarp::os::Network::connect(client_name, server_name);     //todo - check for connection or errors
+        //Yarp Network & ROS initialized in the main file
         ros_ = std::make_unique<OdomPublisher>();
 
-        //Ex Odom ros node
+        //Init variables
         xy_offsets_computed = false;
-        this->initial_offset_x = 0;
-        this->initial_offset_y = 0;
+        initial_offset_x = 0;
+        initial_offset_y = 0;
+        foot_link = "r_sole"; 
+    };
+
+    bool read(yarp::os::ConnectionReader& connection) override
+    {
+        //std::cout << "start reading" << std::endl;
+        //Init variables used in each thread
+        nav_msgs::msg::Odometry odom_msg;
+        tf2::Quaternion imu_quat;
+        geometry_msgs::msg::TransformStamped tf, odom_tf;
         /* set up odom msg */
-        odom_msg.header.frame_id = this->odom_frame_name;
-        odom_msg.child_frame_id = this->root_link_name;
+        odom_msg.header.frame_id = odom_frame_name;
+        odom_msg.child_frame_id = root_link_name;
         /* set up odom frame */
-        odom_tf.child_frame_id = this->root_link_name;
-        odom_tf.header.frame_id = this->odom_frame_name;
+        odom_tf.child_frame_id = root_link_name;
+        odom_tf.header.frame_id = odom_frame_name;
         // TODO - Tune covariance matricies
         odom_msg.pose.covariance = {0.05, 0    , 0   , 0   , 0   , 0   , 
                                     0   , 0.05 , 0   , 0   , 0   , 0   , 
@@ -65,23 +74,16 @@ public:
                                     0   , 0    , 0   , 0.12, 0   , 0   ,
                                     0   , 0    , 0   , 0   , 0.12, 0   , 
                                     0   , 0    , 0   , 0   , 0   , 0.12};
-        this->foot_link = "r_sole"; 
-    };
-
-    //using BufferedPort<Bottle>::onRead;
-    //void onRead(yarp::os::Bottle data)
-
-    bool read(yarp::os::ConnectionReader& connection) override
-    {
-        std::cout<< "onRead";
+        //Read congregated data from /odometry_state:o
         yarp::os::Bottle data;
         bool ok = data.read(connection);
         if (!ok) {
-            std::cout << "Bad Yarp connection \n";
+            std::cout << "Bad Yarp connection" << std::endl;
             return false;
         }
         try
         {
+            //std::cout << "Initial offset" << std::endl;
             //Compute odom initial offsets on X Y components
             if (! xy_offsets_computed)
             {
@@ -90,21 +92,20 @@ public:
                 xy_offsets_computed = true;
             }
             //Find which foot is in contact with the ground -> for planarity
-            if (data.get(19).asFloat64() > sensor_threshold && data.get(20).asFloat64() < sensor_threshold)
+            if (data.get(22).asFloat64() > sensor_threshold && data.get(23).asFloat64() < sensor_threshold)
             {
-                //l_sole
                 foot_link = "l_sole"; 
             }
-            else if (data.get(19).asFloat64() < sensor_threshold && data.get(20).asFloat64() > sensor_threshold)
+            else if (data.get(22).asFloat64() < sensor_threshold && data.get(23).asFloat64() > sensor_threshold)
             {
-                //r_sole
                 foot_link = "r_sole"; 
             }
-            else if (data.get(19).asFloat64() < sensor_threshold && data.get(20).asFloat64() < sensor_threshold)
+            else if (data.get(22).asFloat64() < sensor_threshold && data.get(23).asFloat64() < sensor_threshold)
             {
-                //TODO handle exception of-> when in double support do nothing, keep the previous value
+                //TODO handle exception of robot not in contact with ground-> when in double support do nothing, keep the previous value
+                //std::cout << "Robot not in contact with the ground" << std::endl;
             }
-
+            //std::cout << "Translation Comp" << std::endl;
             //Translation Component of odometry X Y Z
             if (! ros_->get_TF("chest", root_link_name, tf))  // updates the TF variable with the most recent tf
             {
@@ -114,6 +115,7 @@ public:
             odom_tf.transform.translation.y = data.get(1).asFloat64() - initial_offset_y - tf.transform.translation.y;
             odom_tf.transform.translation.z = data.get(2).asFloat64() + tf.transform.translation.z; 
             //Orientation
+            //std::cout << "Orientation Comp" << std::endl;
             if (! ros_->get_TF(foot_link, root_link_name, tf))  // updates the TF variable with the most recent tf
             {
                 throw std::logic_error("Cannot get TF 2");
@@ -123,10 +125,9 @@ public:
             tf2::Matrix3x3 m(tf_ground);
             double roll, pitch, yaw;
             m.getRPY(roll, pitch, yaw);
-            tf2::Quaternion q_final;  //imu quaternion reading from sensor
+            tf2::Quaternion q_final;  //final quaternion reading from imu sensor only the yaw component
             q_final.setRPY(roll, pitch, data.get(12).asList()->get(0).asList()->get(0).asList()->get(2).asFloat64()* 0.0174533);
         
-
             odom_tf.transform.rotation.x = q_final.x();
             odom_tf.transform.rotation.y = q_final.y();
             odom_tf.transform.rotation.z = q_final.z();
@@ -147,12 +148,12 @@ public:
             // time stamps done when published
             //odom_msg.header.stamp = now(); // yarp::os::Time::now()
             //odom_tf.header.stamp = odom_msg.header.stamp;
-            std::cout << "Publishing odom" << "\n";
+            //std::cout << "Publishing odom" << std::endl;
             ros_->publish_odom(odom_tf, odom_msg);
         }
         catch(const std::exception& e)
         {
-            std::cerr << "Error: " << e.what() << "\n";
+            std::cerr << "Error: " << e.what() << std::endl;
             return false;
         }
         return true;

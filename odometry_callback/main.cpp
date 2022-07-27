@@ -15,13 +15,15 @@ int main(int argc, char* argv[])
     //processor.useCallback();
     //processor.open(server_name);
     yarp::os::Network::connect(client_name, server_name);
-
-    //create
+    std::cout << "setting callback" << std::endl;
+    //
     port.setReader(processor);
+    std::cout << "passing node" << std::endl;
     auto node = processor.ros_;
+    
     if (rclcpp::ok()) 
     {
-        std::cout << "Spinning odometry_standalone node \n";
+        std::cout << "Spinning odometry_standalone node" << std::endl;
         rclcpp::spin(node);
     }
     return 0;
