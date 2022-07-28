@@ -25,6 +25,8 @@ int main(int argc, char* argv[])
     {
         std::cout << "Spinning odometry_standalone node" << std::endl;
         rclcpp::spin(node);
+        std::cout << "Shutting down" << std::endl;
+        rclcpp::shutdown();
     }
     return 0;
 }
