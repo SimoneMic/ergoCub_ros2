@@ -46,7 +46,7 @@ private:
         }
         catch(const std::exception& e)
         {
-            std::cerr << e.what() << '\n';
+            std::cerr << e.what() << std::endl;
             return;
         }
         int n = msg_in.size();
@@ -171,8 +171,10 @@ int main(int argc, char ** argv)
     }
     else
     {
-        std::cerr << 'rclcpp not ok\n';
+        std::cerr << 'rclcpp not ok' << std::endl;
         return 1;
     }
+    std::cout << "Shutting down" << std::endl;
+    rclcpp::shutdown();
     return 0;
 }

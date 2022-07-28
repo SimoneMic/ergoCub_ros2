@@ -75,10 +75,12 @@ int main(int argc, char** argv)
     yarp::os::Network yarp;
     rclcpp::init(argc, argv);
     auto node = std::make_shared<odom_GT>();
-        if (rclcpp::ok()) 
-        {
-            std::cout << "Spinning odom_GT node \n";
-            rclcpp::spin(node);
-        }
+    if (rclcpp::ok()) 
+    {
+        std::cout << "Spinning odom_GT node \n";
+        rclcpp::spin(node);
+    }
+    std::cout << "Shutting down" << std::endl;
+    rclcpp::shutdown();
     return 0;
 }

@@ -172,8 +172,10 @@ int main(int argc, char* argv[])
     auto node = std::make_shared<ChestProjection>();   
     if (rclcpp::ok()) 
     {
-        std::cout << "Spinning chest_projection node \n";
+        std::cout << "Spinning chest_projection node" << std::endl;
         rclcpp::spin(node);
+        std::cout << "Shutting down" << std::endl;
+        rclcpp::shutdown();
     }
     return 0;
 }

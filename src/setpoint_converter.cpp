@@ -180,6 +180,7 @@ int main(int argc, char** argv)
         auto node = std::make_shared<SetpointConverter>();
         rclcpp::spin(node);
     }
-    
+    std::cout << "Shutting down" << std::endl;
+    rclcpp::shutdown();
     return 0;
 }

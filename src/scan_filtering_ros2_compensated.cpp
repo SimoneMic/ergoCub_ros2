@@ -151,6 +151,8 @@ int main(int argc, char** argv)
     {
         std::cout << "ROS2 not available. Shutting down node. \n";
     }
+    std::cout << "Shutting down" << std::endl;
+    rclcpp::shutdown();
     return 0;
 }
 
