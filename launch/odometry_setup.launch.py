@@ -5,7 +5,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='ergoCub_ros2',
-            executable='odometry_callback',
+            executable='odometry_standalone',
             output='screen',
             parameters=[{'use_sim_time': True}]
         )

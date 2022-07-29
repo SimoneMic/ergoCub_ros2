@@ -57,15 +57,11 @@ Estimator_odom::Estimator_odom()
 //get the transform from frame source_link to frame target_link. 
 bool Estimator_odom::get_TF(const char* target_link, const char* source_link)
 {
-    try
-    {
-        while (rclcpp::ok())
-        {
             try
             {
                 //std::cout << "looking for transform \n";
                 //TF = tf_buffer_in->lookupTransform(root_link_name, target_link, rclcpp::Time(0), 100ms); // target link = chest rclcpp::Time(0)
-                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms);
+                TF = tf_buffer_in->lookupTransform(target_link, source_link, odom_tf.header.stamp, 300ms);
                 //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
                 //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
                 return true;
@@ -73,16 +69,9 @@ bool Estimator_odom::get_TF(const char* target_link, const char* source_link)
             catch (tf2::TransformException &ex)
             {
                 RCLCPP_WARN(this->get_logger(), "Error in TF odom computation: %s \n", ex.what());
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));  //rclcpp::Duration(0.1).sleep();
-                continue;
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));  //rclcpp::Duration(0.1).sleep();
+                return false;
             }
-        }
-    }
-    catch(const std::exception& e)
-    {
-        RCLCPP_WARN(this->get_logger(), "%s \n",e.what());
-        return false;
-    }
     return true;
 }
 
@@ -100,8 +89,9 @@ bool Estimator_odom::compute_odom()
             initial_offset_y = in_bottle.get(1).asFloat64();
             xy_offsets_computed = true;
         }
-
-
+        // time stamps
+        odom_msg.header.stamp = now(); // yarp::os::Time::now()
+        odom_tf.header.stamp = odom_msg.header.stamp;
         //New Code
         /*
         if (! get_TF(root_link_name, "chest"))  // updates the TF variable with the most recent tf
@@ -223,9 +213,6 @@ bool Estimator_odom::compute_odom()
         odom_msg.twist.twist.angular.y = in_bottle.get(10).asFloat64();
         odom_msg.twist.twist.angular.z = in_bottle.get(11).asFloat64();
         
-        // time stamps
-        odom_msg.header.stamp = now(); // yarp::os::Time::now()
-        odom_tf.header.stamp = odom_msg.header.stamp;
         //RCLCPP_INFO(this->get_logger(), "reading time: %f", now());
         //std::cout << "retunrning odom \n";
         return true;

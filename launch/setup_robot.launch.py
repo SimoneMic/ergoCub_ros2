@@ -12,6 +12,7 @@ def generate_launch_description():
             get_package_share_directory('ergoCub_ros2'), 'launch'),
             '/robot_state_publisher.launch.py'])
         )
+    #deprecated
     scan_filtering = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
@@ -45,10 +46,9 @@ def generate_launch_description():
 
     return LaunchDescription([
         state_publisher,
-        #scan_filtering,
         projection_node,
         rviz_node,
         scan_filtering_compensated,
         odom_node,
-        depth_to_pointcloud
+        #depth_to_pointcloud
     ])

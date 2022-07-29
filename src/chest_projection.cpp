@@ -72,6 +72,7 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
 void ChestProjection::timer_callback()
 {
     std::lock_guard<std::mutex> guard(m);   //lock
+    
     // Check which foot is on the ground based on the contact sensors
     yarp::os::Bottle in_bottle;
     wrench_reader_port.read(in_bottle);
@@ -98,6 +99,8 @@ void ChestProjection::timer_callback()
     {
         RCLCPP_WARN(this->get_logger(), "Cannot find TF between: %s & %s \n", chest_link, foot_link);
     }
+    projection_TF.header.stamp = TF.header.stamp;
+    virtual_unicycle_base_tf.header.stamp = projection_TF.header.stamp;
     // Compute the projection to the same ground of the fixed foot
     // get RPY
     tf2::Quaternion tf_quat;
@@ -126,8 +129,7 @@ void ChestProjection::timer_callback()
     virtual_unicycle_base_tf.transform.translation.z = 0;
     virtual_unicycle_base_tf.transform.rotation = projection_TF.transform.rotation;
     std::vector<geometry_msgs::msg::TransformStamped> tf_buffer;
-    projection_TF.header.stamp = now();
-    virtual_unicycle_base_tf.header.stamp = projection_TF.header.stamp;
+    
     tf_buffer.push_back(projection_TF);
     tf_buffer.push_back(virtual_unicycle_base_tf);
     tf_pub->sendTransform(tf_buffer);

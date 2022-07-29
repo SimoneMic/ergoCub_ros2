@@ -68,7 +68,7 @@ private:
             //Compensate Cloud by the Y component of the head oscillation during walking
             try
             {
-                compensation_TF = tf_buffer_in -> lookupTransform("virtual_unicycle_base", "lidar", rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1));
+                compensation_TF = tf_buffer_in -> lookupTransform("virtual_unicycle_base", "lidar", scan_in->header.stamp, rclcpp::Duration::from_seconds(0.1));
                 // Pass data from Pointcloud2 to pcl
                 pcl::fromROSMsg(transformed_cloud, *pcl_compensated_cloud);
                 //for each point subtract the y-component of the distance between the lidar and the virtual_unicycle_base
@@ -111,7 +111,7 @@ private:
             // Publish PC2
             sensor_msgs::msg::PointCloud2 ros_cloud;
             ros_cloud.header.frame_id = referece_frame;
-            ros_cloud.header.stamp = now();
+            ros_cloud.header.stamp = scan_in->header.stamp;
             pcl::toROSMsg(*cloud_filtered2, ros_cloud);
             pointcloud_pub->publish(ros_cloud);
         }
@@ -146,13 +146,14 @@ int main(int argc, char** argv)
         auto node = std::make_shared<ScanFilter>();
         std::cout << "Starting up node. \n";
         rclcpp::spin(node);
+        std::cout << "Shutting down" << std::endl;
+        rclcpp::shutdown();
     }
     else
     {
         std::cout << "ROS2 not available. Shutting down node. \n";
     }
-    std::cout << "Shutting down" << std::endl;
-    rclcpp::shutdown();
+    
     return 0;
 }
 
