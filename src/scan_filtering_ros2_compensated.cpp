@@ -62,31 +62,15 @@ private:
             }
             //PCL Clouds
             pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-            pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_compensated_cloud (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZ>);
-            //Compensate Cloud by the Y component of the head oscillation during walking
-            try
-            {
-                compensation_TF = tf_buffer_in -> lookupTransform("virtual_unicycle_base", "lidar", scan_in->header.stamp, rclcpp::Duration::from_seconds(0.1));
-                // Pass data from Pointcloud2 to pcl
-                pcl::fromROSMsg(transformed_cloud, *pcl_compensated_cloud);
-                //for each point subtract the y-component of the distance between the lidar and the virtual_unicycle_base
-                for(int i=0; i < pcl_compensated_cloud->points.size(); ++i) //should be optimized
-                {
-                    pcl_compensated_cloud->points[i].y -= compensation_TF.transform.translation.y;
-                }
-            }
-            catch(const std::exception& e)
-            {
-               RCLCPP_ERROR(this->get_logger(), "Cannot Compensate lidar cloud: %s \n", e.what());
-               pcl::fromROSMsg(transformed_cloud, *pcl_compensated_cloud);  //reset
-            }
+
+            pcl::fromROSMsg(transformed_cloud, *pcl_cloud);
             // Filter cloud
-            RCLCPP_INFO(get_logger(), "Original cloud size: %li \n", pcl_compensated_cloud->size());
+            RCLCPP_INFO(get_logger(), "Original cloud size: %li \n", pcl_cloud->size());
             // FILTER 1 - PASSTHROUGH
             pcl::PassThrough<pcl::PointXYZ> pass;       // Create the passthrough filtering object
-            pass.setInputCloud (pcl_compensated_cloud);
+            pass.setInputCloud (pcl_cloud);
             pass.setFilterFieldName ("z");
             pass.setFilterLimits(filter_z_low, filter_z_high);
             // Filtering
@@ -108,6 +92,7 @@ private:
             proj.setModelCoefficients (coefficients);
             proj.filter (*cloud_filtered2);
             RCLCPP_INFO(get_logger(), "Cloud size after filter 2: %li \n", cloud_filtered2->size());
+            RCLCPP_INFO(get_logger(), "frame: %s \n", cloud_filtered2->header.frame_id);
             // Publish PC2
             sensor_msgs::msg::PointCloud2 ros_cloud;
             ros_cloud.header.frame_id = referece_frame;
