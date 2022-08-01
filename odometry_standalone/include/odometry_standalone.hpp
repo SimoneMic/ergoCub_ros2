@@ -49,7 +49,7 @@ private:
 
     bool xy_offsets_computed, yaw_offsets_computed;
     double initial_offset_x, initial_offset_y, initial_offset_yaw;
-    const double loopFreq = 30.0;
+    const double loopFreq = 100.0;
 
     yarp::os::Port contacts_reader_port;
     const std::string contacts_reader_port_name = "/estimator_odom/contact_reader:i";
