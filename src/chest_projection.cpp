@@ -22,7 +22,7 @@ private:
     /* const */
     const std::string reader_port_name = "/chest_projector/wrench_reader:i";
     const std::string writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double loopFreq = 30.0;
+    const double loopFreq = 60.0;
     const std::string chest_link = "chest";
     /* msgs */
     geometry_msgs::msg::TransformStamped TF;
@@ -95,13 +95,13 @@ void ChestProjection::timer_callback()
         //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
     // Get TF
-    if (!get_TF(foot_link, chest_link))     //get_TF(chest_link, foot_link)
+    if (!get_TF(foot_link, chest_link))   
     {
-        RCLCPP_WARN(this->get_logger(), "Cannot find TF between: %s & %s \n", chest_link, foot_link);
+        RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", chest_link, foot_link);
+        return;
     }
-    projection_TF.header.stamp = TF.header.stamp;
-    virtual_unicycle_base_tf.header.stamp = projection_TF.header.stamp;
-    // Compute the projection to the same ground of the fixed foot
+    projection_TF.header.stamp = TF.header.stamp;   //timestamp is equal to the latest TF
+    // Compute the projection to the same ground of the foot
     // get RPY
     tf2::Quaternion tf_quat;
     tf2::fromMsg(TF.transform.rotation, tf_quat);
@@ -118,14 +118,25 @@ void ChestProjection::timer_callback()
     //The translational Y component is the mean between the feet sole distance
     if (foot_link=="r_sole")
     {
-        get_TF(foot_link, "l_sole");
+        if(!get_TF(foot_link, "l_sole"))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", foot_link, "l_sole");
+            tf_pub->sendTransform(projection_TF);   //send atleast the available correct tf
+            return;
+        }
         virtual_unicycle_base_tf.transform.translation.y = TF.transform.translation.y/2;
     }
     else
     {
-        get_TF(foot_link, "r_sole");
+        if(!get_TF(foot_link, "r_sole"))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", foot_link, "r_sole");
+            tf_pub->sendTransform(projection_TF);   //send atleast the available correct tf
+            return;
+        }
         virtual_unicycle_base_tf.transform.translation.y = TF.transform.translation.y/2;
     }
+    virtual_unicycle_base_tf.header.stamp = TF.header.stamp;    //timestamp is equal to the latest TF
     virtual_unicycle_base_tf.transform.translation.z = 0;
     virtual_unicycle_base_tf.transform.rotation = projection_TF.transform.rotation;
     std::vector<geometry_msgs::msg::TransformStamped> tf_buffer;
@@ -140,26 +151,14 @@ bool ChestProjection::get_TF(const std::string &target_link, const std::string &
 {
     try
     {
-        while (rclcpp::ok())
-        {
-            try
-            {
-                TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
-                //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
-                //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
-                return true;
-            }
-            catch (tf2::TransformException &ex)
-            {
-                RCLCPP_WARN(this->get_logger(), "%s \n",ex.what());
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));  //rclcpp::Duration(0.1).sleep();
-                continue;
-            }
-        }
+        TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
+        //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
+        //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
+        return true;
     }
-    catch(const std::exception& e)
+    catch (tf2::TransformException &ex)
     {
-        RCLCPP_WARN(this->get_logger(), "%s \n",e.what());
+        RCLCPP_WARN(this->get_logger(), "%s \n",ex.what());
         return false;
     }
     return true;
