@@ -67,7 +67,7 @@ ament_target_dependencies(odometry_standalone
 )
 target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/odometry_standalone/include)
 
-add_executable(odometry_callback odometry_callback/main.cpp odometry_callback/src/odometry_callback.cpp)
+add_executable(odometry_callback odometry_callback/main.cpp odometry_callback/src/odometry_callback.cpp odometry_callback/src/yarp_odometry_processor.cpp)
 ament_target_dependencies(odometry_callback
   "std_msgs"
   "tf2_ros"

@@ -24,14 +24,14 @@ using yarp::os::Bottle;
 class OdomPublisher : public rclcpp::Node
 {
 private:
-    geometry_msgs::msg::TransformStamped TF;
-    const std::string odom_topic = "odom";
-    std::mutex m;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-    std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
-    rclcpp::Clock::SharedPtr clock_;
+    geometry_msgs::msg::TransformStamped m_TF;
+    const std::string m_odom_topic = "odom";
+    std::mutex m_mutex;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_broadcaster;
+    std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> m_tf_buffer_in;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_odom_pub;
+    rclcpp::Clock::SharedPtr m_clock;
 public:
     OdomPublisher();
     bool get_TF(const std::string &target_link,const std::string &source_link, geometry_msgs::msg::TransformStamped &out);

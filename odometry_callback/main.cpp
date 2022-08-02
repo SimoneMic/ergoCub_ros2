@@ -12,14 +12,11 @@ int main(int argc, char* argv[])
     yarp::os::Port port;
     port.open(server_name);
     YarpOdometryProcessor processor;
-    //processor.useCallback();
-    //processor.open(server_name);
     yarp::os::Network::connect(client_name, server_name);
     std::cout << "setting callback" << std::endl;
-    //
     port.setReader(processor);
     std::cout << "passing node" << std::endl;
-    auto node = processor.ros_;
+    auto node = processor.p_ros_;
     
     if (rclcpp::ok()) 
     {
