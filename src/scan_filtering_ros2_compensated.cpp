@@ -67,7 +67,7 @@ private:
 
             pcl::fromROSMsg(transformed_cloud, *pcl_cloud);
             // Filter cloud
-            RCLCPP_INFO(get_logger(), "Original cloud size: %li \n", pcl_cloud->size());
+            //RCLCPP_INFO(get_logger(), "Original cloud size: %li \n", pcl_cloud->size());
             // FILTER 1 - PASSTHROUGH
             pcl::PassThrough<pcl::PointXYZ> pass;       // Create the passthrough filtering object
             pass.setInputCloud (pcl_cloud);
@@ -78,7 +78,7 @@ private:
             sensor_msgs::msg::PointCloud2 ros_cloud_debug;
             pcl::toROSMsg(*cloud_filtered2, ros_cloud_debug);
             debug_pub->publish(ros_cloud_debug);
-            RCLCPP_INFO(get_logger(), "Cloud size after filter 1: %li \n", cloud_filtered1->size());
+            //RCLCPP_INFO(get_logger(), "Cloud size after filter 1: %li \n", cloud_filtered1->size());
             // FILTER 2 - PLANE PROJECTOR
             pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());   // Create a set of planar coefficients with X=Y=0,Z=1, d= 1.5
             coefficients->values.resize(4);
@@ -91,8 +91,7 @@ private:
             proj.setInputCloud (cloud_filtered1);
             proj.setModelCoefficients (coefficients);
             proj.filter (*cloud_filtered2);
-            RCLCPP_INFO(get_logger(), "Cloud size after filter 2: %li \n", cloud_filtered2->size());
-            RCLCPP_INFO(get_logger(), "frame: %s \n", cloud_filtered2->header.frame_id);
+            //RCLCPP_INFO(get_logger(), "Cloud size after filter 2: %li \n", cloud_filtered2->size());
             // Publish PC2
             sensor_msgs::msg::PointCloud2 ros_cloud;
             ros_cloud.header.frame_id = referece_frame;
