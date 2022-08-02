@@ -14,17 +14,17 @@
 class CoM_trajectory_publisher : public rclcpp::Node
 {
 private:
-    const std::string yarp_trajectory_port = "/planned_CoM/data:o";
-    const std::string port_name = "/CoM_trajectory_publisher_test/reader:i";
-    yarp::os::Port reader_port;
+    const std::string m_yarp_trajectory_port = "/planned_CoM/data:o";
+    const std::string m_port_name = "/CoM_trajectory_publisher_test/reader:i";
+    yarp::os::Port m_reader_port;
 
-    const std::string topic_name = "/CoM_planned_trajectory_test";
+    const std::string m_topic_name = "/CoM_planned_trajectory_test";
 
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr downsampled_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr left_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr right_pub_;
-    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_downsampled_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_left_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_right_pub_;
+    rclcpp::TimerBase::SharedPtr m_timer_;
 
     void callback()
     {
@@ -38,11 +38,11 @@ private:
         nav_msgs::msg::Path CoM_path;
         nav_msgs::msg::Path downsampled_CoM_path;
         CoM_path.header.stamp = now();
-        CoM_path.header.frame_id = "odom";
+        CoM_path.header.frame_id = "odom";      //odom
         downsampled_CoM_path.header = CoM_path.header;
         try
         {
-            reader_port.read(msg_in);
+            m_reader_port.read(msg_in);
         }
         catch(const std::exception& e)
         {
@@ -139,23 +139,23 @@ private:
         }
 
         RCLCPP_INFO(this->get_logger(), "Downsized CoM trajectory (%i) \n", downsampled_CoM_path.poses.size());
-        pub_->publish(CoM_path);
-        downsampled_pub_->publish(downsampled_CoM_path);
-        left_pub_->publish(left_extremes);
-        right_pub_->publish(right_extremes);
+        m_pub_->publish(CoM_path);
+        m_downsampled_pub_->publish(downsampled_CoM_path);
+        m_left_pub_->publish(left_extremes);
+        m_right_pub_->publish(right_extremes);
     }
 
 public:
     CoM_trajectory_publisher(): Node("CoM_trajectory_publisher")
     {
-        reader_port.open(port_name);
-        yarp::os::Network::connect(yarp_trajectory_port, port_name);
-        pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name, 10);
-        downsampled_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_downsampled", 10);
-        left_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_left", 10);
-        right_pub_ = this->create_publisher<nav_msgs::msg::Path>(topic_name + "_right", 10);
+        m_reader_port.open(m_port_name);
+        yarp::os::Network::connect(m_yarp_trajectory_port, m_port_name);
+        m_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name, 10);
+        m_downsampled_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_downsampled", 10);
+        m_left_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_left", 10);
+        m_right_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_right", 10);
         auto duration = std::chrono::duration<double>(1.0);
-        timer_ = this->create_wall_timer(duration, std::bind(& CoM_trajectory_publisher::callback, this));
+        m_timer_ = this->create_wall_timer(duration, std::bind(& CoM_trajectory_publisher::callback, this));
         RCLCPP_INFO(this->get_logger(), "Created Node\n");
     }
 };

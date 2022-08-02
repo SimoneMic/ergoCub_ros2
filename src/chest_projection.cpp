@@ -20,130 +20,130 @@ class ChestProjection : public rclcpp::Node
 {
 private:
     /* const */
-    const std::string reader_port_name = "/chest_projector/wrench_reader:i";
-    const std::string writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double loopFreq = 60.0;
-    const std::string chest_link = "chest";
+    const std::string m_reader_port_name = "/chest_projector/wrench_reader:i";
+    const std::string m_writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
+    const double m_loopFreq = 100.0;
+    const std::string m_chest_link = "chest";
+    const double m_sensor_treshold = 100.0;
     /* msgs */
-    geometry_msgs::msg::TransformStamped TF;
-    geometry_msgs::msg::TransformStamped projection_TF;
+    geometry_msgs::msg::TransformStamped m_TF;
+    geometry_msgs::msg::TransformStamped m_projection_TF;
     /* TF objects*/
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub;
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer_in;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_pub;
+    std::shared_ptr<tf2_ros::Buffer> m_tf_buffer_in;
+    std::shared_ptr<tf2_ros::TransformListener> m_tf_listener_{nullptr};
     /* YARP ports*/
-    yarp::os::Port wrench_reader_port;
+    yarp::os::Port m_wrench_reader_port;
     /* ground contact var */
-    std::string foot_link = "r_sole";
+    std::string m_foot_link = "r_sole";
     //timer for loop
-    rclcpp::TimerBase::SharedPtr timer_;
-    std::mutex m;
+    rclcpp::TimerBase::SharedPtr m_timer_;
+    std::mutex m_mutex;
     void timer_callback();
     bool get_TF(const std::string &target_link, const std::string &source_link);
 
     //virtual unicycle base position variables
-    geometry_msgs::msg::TransformStamped initial_tf_right;
-    geometry_msgs::msg::TransformStamped initial_tf_left;
-    geometry_msgs::msg::TransformStamped virtual_unicycle_base_tf;
+    geometry_msgs::msg::TransformStamped m_initial_tf_right;
+    geometry_msgs::msg::TransformStamped m_initial_tf_left;
+    geometry_msgs::msg::TransformStamped m_virtual_unicycle_base_tf;
 public:
     ChestProjection();
 };
 
 ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
 {
-    wrench_reader_port.open(reader_port_name);
-    yarp::os::Network::connect(writer_port_name, reader_port_name);
+    m_wrench_reader_port.open(m_reader_port_name);
+    yarp::os::Network::connect(m_writer_port_name, m_reader_port_name);
 
-    foot_link = "r_sole";
-    projection_TF.child_frame_id = "projection";
-    projection_TF.header.frame_id = foot_link;
+    m_foot_link = "r_sole";
+    m_projection_TF.child_frame_id = "projection";
+    m_projection_TF.header.frame_id = m_foot_link;
     /* init timer*/
-    auto duration = std::chrono::duration<double>(1/loopFreq);
-    timer_ = this->create_wall_timer( duration , std::bind(&ChestProjection::timer_callback, this));
+    auto duration = std::chrono::duration<double>(1/m_loopFreq);
+    m_timer_ = this->create_wall_timer( duration , std::bind(&ChestProjection::timer_callback, this));
     /* init TFs*/
-    tf_pub = std::make_shared<tf2_ros::TransformBroadcaster>(this);
-    tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_in);
-
-    virtual_unicycle_base_tf.child_frame_id = "virtual_unicycle_base";
-    virtual_unicycle_base_tf.header.frame_id = foot_link;
+    m_tf_pub = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+    m_tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    m_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer_in);
+    m_virtual_unicycle_base_tf.child_frame_id = "virtual_unicycle_base";
+    m_virtual_unicycle_base_tf.header.frame_id = m_foot_link;
 }
 
 void ChestProjection::timer_callback()
 {
-    std::lock_guard<std::mutex> guard(m);   //lock
+    std::lock_guard<std::mutex> guard(m_mutex);   //lock
     
     // Check which foot is on the ground based on the contact sensors
     yarp::os::Bottle in_bottle;
-    wrench_reader_port.read(in_bottle);
+    m_wrench_reader_port.read(in_bottle);
     //Determine which feet is in contact
-    if (in_bottle.get(0).asFloat64() > 100.0 && in_bottle.get(1).asFloat64() < 100.0)
+    if (in_bottle.get(0).asFloat64() > m_sensor_treshold && in_bottle.get(1).asFloat64() < m_sensor_treshold)
     {
-        foot_link = "l_sole";   //r_sole
-        projection_TF.header.frame_id = foot_link;
+        m_foot_link = "l_sole";   //r_sole
+        m_projection_TF.header.frame_id = m_foot_link;
 
-        virtual_unicycle_base_tf.header.frame_id = foot_link;
+        m_virtual_unicycle_base_tf.header.frame_id = m_foot_link;
 
         //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
-    else if (in_bottle.get(1).asFloat64() > 100.0 && in_bottle.get(0).asFloat64() < 100.0)
+    else if (in_bottle.get(1).asFloat64() > m_sensor_treshold && in_bottle.get(0).asFloat64() < m_sensor_treshold)
     {
-        foot_link = "r_sole";   //l_sole
-        projection_TF.header.frame_id = foot_link;
+        m_foot_link = "r_sole";   //l_sole
+        m_projection_TF.header.frame_id = m_foot_link;
 
-        virtual_unicycle_base_tf.header.frame_id = foot_link;
+        m_virtual_unicycle_base_tf.header.frame_id = m_foot_link;
         //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
     // Get TF
-    if (!get_TF(foot_link, chest_link))   
+    if (!get_TF(m_foot_link, m_chest_link))   
     {
-        RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", chest_link, foot_link);
+        RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", m_chest_link, m_foot_link);
         return;
     }
-    projection_TF.header.stamp = TF.header.stamp;   //timestamp is equal to the latest TF
+    m_projection_TF.header.stamp = m_TF.header.stamp;   //timestamp is equal to the latest TF
     // Compute the projection to the same ground of the foot
     // get RPY
     tf2::Quaternion tf_quat;
-    tf2::fromMsg(TF.transform.rotation, tf_quat);
+    tf2::fromMsg(m_TF.transform.rotation, tf_quat);
     tf2::Matrix3x3 m(tf_quat);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
     tf_quat.setRPY(0, 0, yaw);
-    projection_TF.transform.translation.x = TF.transform.translation.x;     //-
-    projection_TF.transform.translation.y = TF.transform.translation.y;     //-
-    projection_TF.transform.translation.z = 0;
-    projection_TF.transform.rotation = tf2::toMsg(tf_quat);
+    m_projection_TF.transform.translation.x = m_TF.transform.translation.x;     //-
+    m_projection_TF.transform.translation.y = m_TF.transform.translation.y;     //-
+    m_projection_TF.transform.translation.z = 0;
+    m_projection_TF.transform.rotation = tf2::toMsg(tf_quat);
     //Computing of virtual unicycle base tf
-    virtual_unicycle_base_tf.transform.translation.x = projection_TF.transform.translation.x;
+    m_virtual_unicycle_base_tf.transform.translation.x = m_projection_TF.transform.translation.x;
     //The translational Y component is the mean between the feet sole distance
-    if (foot_link=="r_sole")
+    if (m_foot_link=="r_sole")
     {
-        if(!get_TF(foot_link, "l_sole"))
+        if(!get_TF(m_foot_link, "l_sole"))
         {
-            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", foot_link, "l_sole");
-            tf_pub->sendTransform(projection_TF);   //send atleast the available correct tf
+            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", m_foot_link, "l_sole");
+            m_tf_pub->sendTransform(m_projection_TF);   //send atleast the available correct tf
             return;
         }
-        virtual_unicycle_base_tf.transform.translation.y = TF.transform.translation.y/2;
+        m_virtual_unicycle_base_tf.transform.translation.y = m_TF.transform.translation.y/2;
     }
     else
     {
-        if(!get_TF(foot_link, "r_sole"))
+        if(!get_TF(m_foot_link, "r_sole"))
         {
-            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", foot_link, "r_sole");
-            tf_pub->sendTransform(projection_TF);   //send atleast the available correct tf
+            RCLCPP_ERROR(this->get_logger(), "Cannot find TF between: %s & %s \n", m_foot_link, "r_sole");
+            m_tf_pub->sendTransform(m_projection_TF);   //send atleast the available correct tf
             return;
         }
-        virtual_unicycle_base_tf.transform.translation.y = TF.transform.translation.y/2;
+        m_virtual_unicycle_base_tf.transform.translation.y = m_TF.transform.translation.y/2;
     }
-    virtual_unicycle_base_tf.header.stamp = TF.header.stamp;    //timestamp is equal to the latest TF
-    virtual_unicycle_base_tf.transform.translation.z = 0;
-    virtual_unicycle_base_tf.transform.rotation = projection_TF.transform.rotation;
+    m_virtual_unicycle_base_tf.header.stamp = m_TF.header.stamp;    //timestamp is equal to the latest TF
+    m_virtual_unicycle_base_tf.transform.translation.z = 0;
+    m_virtual_unicycle_base_tf.transform.rotation = m_projection_TF.transform.rotation;
     std::vector<geometry_msgs::msg::TransformStamped> tf_buffer;
     
-    tf_buffer.push_back(projection_TF);
-    tf_buffer.push_back(virtual_unicycle_base_tf);
-    tf_pub->sendTransform(tf_buffer);
+    tf_buffer.push_back(m_projection_TF);
+    tf_buffer.push_back(m_virtual_unicycle_base_tf);
+    m_tf_pub->sendTransform(tf_buffer);
 }
 
 //get the transform for the data originated in the source_link to the frame expressed by the target_link
@@ -151,7 +151,7 @@ bool ChestProjection::get_TF(const std::string &target_link, const std::string &
 {
     try
     {
-        TF = tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
+        m_TF = m_tf_buffer_in->lookupTransform(target_link, source_link, rclcpp::Time(0), 100ms); // target link = chest
         //RCLCPP_INFO(this->get_logger(), "TF: x %f y %f z %f  - xa %f ya %f za %f wa %f \n", TF.transform.translation.x, TF.transform.translation.y, TF.transform.translation.z,
         //                                                                                    TF.transform.rotation.x, TF.transform.rotation.y, TF.transform.rotation.z, TF.transform.rotation.w);
         return true;
