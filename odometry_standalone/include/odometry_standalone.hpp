@@ -23,39 +23,39 @@ using yarp::os::Bottle;
 class Estimator_odom : public rclcpp::Node
 {
 private:
-    const char* reader_port_name = "/estimator_odom/odom_reader:i";
-    const char* writer_port = "/base-estimator/floating_base/state:o";
-    const char* imu_reader_port_name = "/estimator_odom/imu_reader:i";
-    const char* imu_writer_port = "/icubSim/chest/inertials/measures:o";
-    yarp::os::Port odom_reader_port;
-    yarp::os::Port imu_reader_port;
+    const char* m_reader_port_name = "/estimator_odom/odom_reader:i";
+    const char* m_writer_port = "/base-estimator/floating_base/state:o";
+    const char* m_imu_reader_port_name = "/estimator_odom/imu_reader:i";
+    const char* m_imu_writer_port = "/icubSim/chest/inertials/measures:o";
+    yarp::os::Port m_odom_reader_port;
+    yarp::os::Port m_imu_reader_port;
     
-    geometry_msgs::msg::TransformStamped transformStamped;
-    geometry_msgs::msg::TransformStamped odom_tf;
-    geometry_msgs::msg::TransformStamped TF;
-    nav_msgs::msg::Odometry odom_msg;
-    tf2::Quaternion imu_quat;
-    double imu_yaw;
+    geometry_msgs::msg::TransformStamped m_transformStamped;
+    geometry_msgs::msg::TransformStamped m_odom_tf;
+    geometry_msgs::msg::TransformStamped m_TF;
+    nav_msgs::msg::Odometry m_odom_msg;
+    tf2::Quaternion m_imu_quat;
+    double m_imu_yaw;
 
-    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr m_timer_;
 
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-    std::unique_ptr<tf2_ros::Buffer> tf_buffer_in;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
-    const char* odom_topic = "estimated_odom";
-    const char* odom_frame_name = "odom";
-    const char* root_link_name = "root_link";
+    std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_broadcaster;
+    std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> m_tf_buffer_in;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_odom_pub;
+    const char* m_odom_topic = "estimated_odom";
+    const char* m_odom_frame_name = "odom";
+    const char* m_root_link_name = "root_link";
 
-    bool xy_offsets_computed, yaw_offsets_computed;
-    double initial_offset_x, initial_offset_y, initial_offset_yaw;
-    const double loopFreq = 100.0;
-
-    yarp::os::Port contacts_reader_port;
-    const std::string contacts_reader_port_name = "/estimator_odom/contact_reader:i";
-    const std::string contacts_server_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double sensor_threshold = 100.0;
-    char* foot_link;
+    bool m_xy_offsets_computed, m_yaw_offsets_computed;
+    double m_initial_offset_x, m_initial_offset_y, m_initial_offset_yaw;
+    const double m_loopFreq = 100.0;
+    const double m_deg_to_rad = M_PI/180;
+    yarp::os::Port m_contacts_reader_port;
+    const std::string m_contacts_reader_port_name = "/estimator_odom/contact_reader:i";
+    const std::string m_contacts_server_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
+    const double m_sensor_threshold = 100.0;
+    char* m_foot_link;
 public:
     Estimator_odom();
     bool get_TF(const char* target_link,const char* source_link);
