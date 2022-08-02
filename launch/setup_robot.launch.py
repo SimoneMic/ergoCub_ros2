@@ -28,6 +28,11 @@ def generate_launch_description():
             get_package_share_directory('ergoCub_ros2'), 'launch'),
             '/odometry_setup.launch.py'])
         )
+    odom_gt = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ergoCub_ros2'), 'launch'),
+            '/odometry_gt.launch.py'])
+        )
     projection_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
@@ -50,5 +55,5 @@ def generate_launch_description():
         rviz_node,
         scan_filtering_compensated,
         odom_node,
-        #depth_to_pointcloud
+        depth_to_pointcloud
     ])

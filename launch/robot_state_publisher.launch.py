@@ -19,7 +19,7 @@ def generate_launch_description():
             package='robot_state_publisher',
             executable='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': robot_desc , 'use_sim_time': True}],
+            parameters=[{'robot_description': robot_desc , 'publish_frequency': 200.0, 'use_sim_time': True}],
             arguments=[robot_urdf])
     ])
 
