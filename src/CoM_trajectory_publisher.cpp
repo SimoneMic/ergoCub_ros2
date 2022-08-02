@@ -154,7 +154,7 @@ public:
         m_downsampled_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_downsampled", 10);
         m_left_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_left", 10);
         m_right_pub_ = this->create_publisher<nav_msgs::msg::Path>(m_topic_name + "_right", 10);
-        auto duration = std::chrono::duration<double>(1.0);
+        auto duration = std::chrono::duration<double>(1/10.0);
         m_timer_ = this->create_wall_timer(duration, std::bind(& CoM_trajectory_publisher::callback, this));
         RCLCPP_INFO(this->get_logger(), "Created Node\n");
     }
