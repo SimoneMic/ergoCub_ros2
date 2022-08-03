@@ -86,6 +86,7 @@ bool Estimator_odom::compute_odom()
         {
             m_initial_offset_x = in_bottle.get(0).asFloat64();
             m_initial_offset_y = in_bottle.get(1).asFloat64();
+            m_initial_offset_yaw = in_bottle.get(5).asFloat64();
             m_xy_offsets_computed = true;
         }
         // time stamps
@@ -125,8 +126,20 @@ bool Estimator_odom::compute_odom()
         m.getRPY(roll, pitch, yaw);
         tf2::Quaternion q_final;  //imu quaternion reading from sensor
         //q_final.setRPY(roll, pitch, -imu_bottle.get(3).asList()->get(0).asList()->get(0).asList()->get(1).asFloat64() * deg_to_rad);  //the real IMU will not have yaw orientation available
-        q_final.setRPY(roll, pitch, in_bottle.get(5).asFloat64());  //get yaw only from estimator
-        RCLCPP_INFO(this->get_logger(), "ROLL: %f PITCH: %f YAW: %f \n", in_bottle.get(3).asFloat64(), in_bottle.get(4).asFloat64(), in_bottle.get(5).asFloat64());
+        //Handle yaw periodicity with the offset (I want to stay inside -Pi and +Pi range)
+        if (in_bottle.get(5).asFloat64() - m_initial_offset_yaw > M_PI)
+        {
+            q_final.setRPY(roll, pitch, in_bottle.get(5).asFloat64() - m_initial_offset_yaw - M_PI);
+        }
+        else if (in_bottle.get(5).asFloat64() - m_initial_offset_yaw < -M_PI)
+        {
+            q_final.setRPY(roll, pitch, in_bottle.get(5).asFloat64() - m_initial_offset_yaw + M_PI);  //get yaw only from estimator
+        }
+        else
+        {
+            q_final.setRPY(roll, pitch, in_bottle.get(5).asFloat64() - m_initial_offset_yaw);  //get yaw only from estimator
+        }
+        RCLCPP_INFO(this->get_logger(), "ESTIMATOR ROLL: %f PITCH: %f YAW: %f \n", in_bottle.get(3).asFloat64(), in_bottle.get(4).asFloat64(), in_bottle.get(5).asFloat64());
 
         m_odom_tf.transform.rotation.x = q_final.x();
         m_odom_tf.transform.rotation.y = q_final.y();
