@@ -94,9 +94,9 @@ controller_server:
       allow_init_with_backwards_motion: False
       max_global_plan_lookahead_dist: 4.0   # 3.0   #Limits the distance to the virtual goal (along the global plan) and thus the number of poses subject to optimization (temporal distance between poses approx dt_ref seconds). But the length is also bounded by the local costmap size 
       force_reinit_new_goal_dist: 1.0   #1.0    #Reinitialize the trajectory if a previous goal is updated with a separation of more than the specified value in meters (skip hot-starting) 
-      global_plan_viapoint_sep: 0.3
-      global_plan_prune_distance: 1.0
-      feasibility_check_no_poses: 2
+      global_plan_viapoint_sep: 1.0   #0.3
+      global_plan_prune_distance: 3.0 #1.0
+      feasibility_check_no_poses: 2 #2
       publish_feedback: False
       exact_arc_length: False   #If true, the planner uses the exact arc length in velocity, acceleration and turning rate computations (-> increased cpu time), otherwise the Euclidean approximation is used. 
           
@@ -137,7 +137,7 @@ controller_server:
       no_inner_iterations: 9    #5
       no_outer_iterations: 8    #4
       optimization_activate: True
-      optimization_verbose: True
+      optimization_verbose: False
       penalty_epsilon: 0.05  #0.1 #Add a small safety margin to penalty functions for hard-constraint approximations needs to be < max_vel_x
       obstacle_cost_exponent: 4.0
       weight_max_vel_x: 2.0   #2.0  #Optimization weight for satisfying the maximum allowed translational velocity 
@@ -178,7 +178,7 @@ controller_server:
       delete_detours_backwards: True    #True
       detours_orientation_tolerance: 3.14    #
       max_ratio_detours_duration_best_duration: 5.0   #3.0
-      visualize_hc_graph: True   #False
+      visualize_hc_graph: False   #False
       visualize_with_time_as_z_axis_scale: 0.0
 
       # Recovery
