@@ -248,8 +248,8 @@ local_costmap:
       robot_base_frame: virtual_unicycle_base #projection
       use_sim_time: True
       rolling_window: true
-      width: 6    #3
-      height: 6   #3
+      width: 10    #3
+      height: 10   #3
       resolution: 0.05
       robot_radius: 0.4
       track_unknown_space: false
@@ -262,7 +262,7 @@ local_costmap:
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         enabled: true
-        inflation_radius: 1.0
+        inflation_radius: 2.0   #1.0
         cost_scaling_factor: 2.5
         inflate_unknown: false
         inflate_around_unknown: false
@@ -271,15 +271,15 @@ local_costmap:
         enabled: true
         observation_sources: scan
         footprint_clearing_enabled: true
-        max_obstacle_height: 3.0
+        max_obstacle_height: 2.0
         combination_method: 1
         scan:
           topic: /filtered_scan_compensated
-          obstacle_max_range: 6.0
+          obstacle_max_range: 20.0
           obstacle_min_range: 0.1
-          raytrace_max_range: 20.0
+          raytrace_max_range: 25.0
           raytrace_min_range: 0.0
-          max_obstacle_height: 3.0
+          max_obstacle_height: 2.0
           min_obstacle_height: 0.0
           clearing: true
           marking: true
@@ -296,19 +296,41 @@ local_costmap:
         z_voxels: 8
         unknown_threshold: 15
         mark_threshold: 2
-        observation_sources: pointcloud
+        observation_sources: pointcloud_mark pointcloud_clear
         combination_method: 1
-        pointcloud:  # no frame set, uses frame from message
+        pointcloud_mark:  # no frame set, uses frame from message
           topic: /camera_rgbd/depth/points
           max_obstacle_height: 2.0
           min_obstacle_height: 0.05
-          obstacle_max_range: 6.0
-          obstacle_min_range: 0.5   #can see the robots hands
-          raytrace_max_range: 4.0
+          obstacle_max_range: 5.0
+          obstacle_min_range: 0.4
+          raytrace_max_range: 6.0
           raytrace_min_range: 0.0
           clearing: false
           marking: true
           data_type: "PointCloud2"
+        pointcloud_clear:  # no frame set, uses frame from message
+          topic: /camera_rgbd/depth/points
+          max_obstacle_height: 4.8
+          min_obstacle_height: -4.8
+          obstacle_max_range: 5.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 12.0
+          raytrace_min_range: 0.0
+          clearing: true
+          marking: false
+          data_type: "PointCloud2"
+        #pointcloud:  # no frame set, uses frame from message
+        #  topic: /camera_rgbd/depth/points
+        #  max_obstacle_height: 2.0
+        #  min_obstacle_height: 0.05
+        #  obstacle_max_range: 5.0
+        #  obstacle_min_range: 0.5   #can see the robots hands
+        #  raytrace_max_range: 6.0
+        #  raytrace_min_range: 0.5
+        #  clearing: true
+        #  marking: true
+        #  data_type: "PointCloud2"
   local_costmap_client:
     ros__parameters:
       use_sim_time: True
@@ -319,13 +341,14 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
+      update_frequency: 2.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: virtual_unicycle_base 
       use_sim_time: True
       robot_radius: 0.4
       resolution: 0.05
+      trinary_costmap: true
       track_unknown_space: true
       plugins: 
       - static_layer
@@ -338,8 +361,8 @@ global_costmap:
         combination_method: 0
         observation_sources: scan
         scan:
-          topic: /scan #filtered_scan_compensated
-          max_obstacle_height: 3.0  #2.0
+          topic: /filtered_scan_compensated #filtered_scan_compensated
+          max_obstacle_height: 2.0  #2.0
           min_obstacle_height: -1.0
           clearing: True
           marking: True
