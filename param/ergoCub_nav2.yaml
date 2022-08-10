@@ -58,7 +58,7 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: True
-    controller_frequency: 1.0    #20.0
+    controller_frequency: 2.0    #20.0
     min_x_velocity_threshold: 0.01
     min_y_velocity_threshold: 0.01
     min_theta_velocity_threshold: 0.01
@@ -87,14 +87,14 @@ controller_server:
 
       teb_autosize: 1.0
       dt_ref: 0.3   #0.3    #Determines the desired resolution of the trajectory: small values lead to a fine resolution and thus a better approximation of the kinodynamic model, but many points must be optimized (major impact on optimization time). Too high values (> 0.6s) can lead to trajectories that are not feasible anymore due to the poor approximation of the kinodynamic model
-      dt_hysteresis: 0.1   #0.1 #Hysteresis for automatic resizing depending on the current temporal resolution, usually approx. 10% of dt_ref is recommended 
+      dt_hysteresis: 0.03   #0.1 #Hysteresis for automatic resizing depending on the current temporal resolution, usually approx. 10% of dt_ref is recommended 
       min_samples: 30  #3    #Minimum number of samples (should be always greater than 2) 
-      max_samples: 500
+      max_samples: 1000  #500
       global_plan_overwrite_orientation: False  #False   #Overwrite orientation of local subgoals provided by the global planner (since they often provide only a 2D path) 
       allow_init_with_backwards_motion: False
       max_global_plan_lookahead_dist: 4.0   # 3.0   #Limits the distance to the virtual goal (along the global plan) and thus the number of poses subject to optimization (temporal distance between poses approx dt_ref seconds). But the length is also bounded by the local costmap size 
       force_reinit_new_goal_dist: 1.0   #1.0    #Reinitialize the trajectory if a previous goal is updated with a separation of more than the specified value in meters (skip hot-starting) 
-      global_plan_viapoint_sep: 1.0   #0.3
+      global_plan_viapoint_sep: -0.1   #0.3 -> 1.0 If positive, via-points are extrected from the global plan (path-following mode). The value determines the resolution of the reference path (min. separation between each two consecutive via-points along the global plan, if negative: disabled). Refer to parameter weight_viapoint for adjusting the intensity. 
       global_plan_prune_distance: 3.0 #1.0
       feasibility_check_no_poses: 2 #2
       publish_feedback: False
@@ -106,6 +106,7 @@ controller_server:
       max_vel_theta: 0.2  #1.0
       max_vel_y: 0.0    #0.0  #Maximum strafing velocity of the robot (should be zero for non-holonomic robots!) 
       acc_lim_x: 1.0    #2.5
+      acc_lim_y: 0.5
       acc_lim_theta: 0.5    #3.2
 
       footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
@@ -123,7 +124,7 @@ controller_server:
       inflation_dist: 0.6   #Buffer zone around obstacles with non-zero penalty costs (should be larger than min_obstacle_dist in order to take effect). Also refer to the weight weight_inflation. 
       include_costmap_obstacles: True       #Specify if obstacles of the local costmap should be taken into account. Each cell that is marked as obstacle is considered as a point-obstacle. Therefore do not choose a very small resolution of the costmap since it increases computation time. In future releases this circumstance is going to be addressed as well as providing an additional api for dynamic obstacles. 
       costmap_obstacles_behind_robot_dist: 1.0    #1.0 #Limit the occupied local costmap obstacles taken into account for planning behind the robot (specify distance in meters). 
-      obstacle_poses_affected: 15   #15 #Number of nearest neighbors on the trajectory taken into account (increases the number of distance calculations for each obstacle). For small obstacles and point obstacles, this value can be small (<10). Increase the value again if the trajectory is not smooth enough close to obstacles. 
+      obstacle_poses_affected: 30   #15 #Number of nearest neighbors on the trajectory taken into account (increases the number of distance calculations for each obstacle). For small obstacles and point obstacles, this value can be small (<10). Increase the value again if the trajectory is not smooth enough close to obstacles. 
 
       dynamic_obstacle_inflation_dist: 0.6
       include_dynamic_obstacles: True   #If set to true, the motion of obstacles with non-zero velocity (provided via user-supplied obstacles on topic ~/obstacles or obtained from the costmap_converter) is predicted and considered during optimization via a constant velocity model.
@@ -145,8 +146,8 @@ controller_server:
       weight_acc_lim_x: 1.0
       weight_acc_lim_y: 0.0
       weight_acc_lim_theta: 1.0
-      weight_kinematics_nh: 1000.0
-      weight_kinematics_forward_drive: 100.0    #1.0 #Optimization weight for forcing the robot to choose only forward directions (positive transl. velocities). A small weight (e.g. 1.0) still allows driving backwards. A value around 1000 almost prevents backward driving (but cannot be guaranteed). 
+      weight_kinematics_nh: 1000.0    #reduce this significantly in order to adjust the tradeoff between compliant longitudinal motion and non-compliant lateral motion (strafing). 
+      weight_kinematics_forward_drive: 30.0  #1.0 #Optimization weight for forcing the robot to choose only forward directions (positive transl. velocities). A small weight (e.g. 1.0) still allows driving backwards. A value around 1000 almost prevents backward driving (but cannot be guaranteed). 
       weight_kinematics_turning_radius: 1.0
       weight_optimaltime: 0.5   #1.0 - must be > 0 #Optimization weight for contracting the trajectory w.r.t transition/execution time 
       weight_shortest_path: 0.0
@@ -162,19 +163,19 @@ controller_server:
       enable_homotopy_class_planning: True
       enable_multithreading: True
       max_number_classes: 4   #4  #Restrict the number of alternative trajectories that are subject to optimization. Often 2 alternatives are sufficient (avoid obstacle on the left or right side). 
-      selection_cost_hysteresis: 5.0  #Specify how much trajectory cost must a new candidate have w.r.t. a previously selected trajectory in order to be selected (selection if new_cost < old_cost*factor). 
+      selection_cost_hysteresis: 1.0  #Specify how much trajectory cost must a new candidate have w.r.t. a previously selected trajectory in order to be selected (selection if new_cost < old_cost*factor). 
       selection_prefer_initial_plan: 1.0
       selection_obst_cost_scale: 100.0  #Extra scaling of obstacle cost terms just for selecting the 'best' candidate. 
       selection_alternative_time_cost: False #True #If true, time cost (sum of squared time differences) is replaced by the total transition time (sum of time differences). 
 
-      roadmap_graph_no_samples: 15
-      roadmap_graph_area_width: 5.0
+      roadmap_graph_no_samples: 15  #15 #Specify the number of samples generated for creating the roadmap graph 
+      roadmap_graph_area_width: 6.0   #6.0  #Random keypoints/waypoints are sampled in a rectangular region between start and goal. Specify the width of that region in meters. 
       roadmap_graph_area_length_scale: 1.0
-      h_signature_prescaler: 0.5
-      h_signature_threshold: 0.1
-      obstacle_heading_threshold: 0.45
-      switching_blocking_period: 0.0
-      viapoints_all_candidates: True  
+      h_signature_prescaler: 0.5  #1.0 #Scale internal parameter (H-signature) that is used to distinguish between homotopy classes. Warning: reduce this parameter only, if you observe problems with too many obstacles in the local cost map, do not choose it extremly low, otherwise obstacles cannot be distinguished from each other (0.2<value<=1). 
+      h_signature_threshold: 0.1  #0.1 #Two H-signatures are assumed to be equal, if both the difference of real parts and complex parts are below the specified threshold. 
+      obstacle_heading_threshold: 0.2  #1.0 ->0.45 #Specify the value of the scalar product between obstacle heading and goal heading in order to take them (obstacles) into account for exploration. 
+      switching_blocking_period: 0.0  #0.0 #Specify a time duration in seconds that needs to be expired before a switch to a new equivalence class is allowed. 
+      viapoints_all_candidates: True  #If true, all trajectories of different topologies are attached to the set of via-points, otherwise only the trajectory sharing the same topology as the initial/global plan is connected with them (no effect on test_optim_node)
       delete_detours_backwards: True    #True
       detours_orientation_tolerance: 3.14    #
       max_ratio_detours_duration_best_duration: 5.0   #3.0
