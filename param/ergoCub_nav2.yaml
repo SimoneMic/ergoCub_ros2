@@ -135,13 +135,13 @@ controller_server:
 
       # Optimization
           
-      no_inner_iterations: 9    #5
-      no_outer_iterations: 8    #4
+      no_inner_iterations: 5    #5
+      no_outer_iterations: 4    #4
       optimization_activate: True
       optimization_verbose: False
-      penalty_epsilon: 0.05  #0.1 #Add a small safety margin to penalty functions for hard-constraint approximations needs to be < max_vel_x
+      penalty_epsilon: 0.09  #0.1 #Add a small safety margin to penalty functions for hard-constraint approximations needs to be < max_vel_x
       obstacle_cost_exponent: 4.0
-      weight_max_vel_x: 2.0   #2.0  #Optimization weight for satisfying the maximum allowed translational velocity 
+      weight_max_vel_x: 1.0   #1.0  #Optimization weight for satisfying the maximum allowed translational velocity 
       weight_max_vel_theta: 1.0   #Optimization weight for satisfying the maximum allowed angular velocity 
       weight_acc_lim_x: 1.0
       weight_acc_lim_y: 0.0
