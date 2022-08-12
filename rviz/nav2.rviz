@@ -10,10 +10,14 @@ Panels:
         - /TF1/Tree1
         - /LaserScan1
         - /Bumper Hit1
+        - /MarkerArray1
         - /PointCloud21
         - /Path2
         - /Path3
         - /Path4
+        - /Marker1
+        - /Marker1/Status1
+        - /Marker1/Topic1
       Splitter Ratio: 0.5833333134651184
     Tree Height: 490
   - Class: rviz_common/Selection
@@ -84,9 +88,13 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: false
+        camera_reference:
+          Value: true
         camera_tilt:
           Value: false
         chest:
+          Value: true
+        chest_imu_frame:
           Value: true
         head:
           Value: false
@@ -227,6 +235,8 @@ Visualization Manager:
               torso_1:
                 torso_2:
                   chest:
+                    chest_imu_frame:
+                      {}
                     l_shoulder_1:
                       l_shoulder_2:
                         l_shoulder_3:
@@ -241,7 +251,8 @@ Visualization Manager:
                         neck_3:
                           head:
                             camera_tilt:
-                              {}
+                              camera_reference:
+                                {}
                             imu_frame:
                               {}
                             lidar:
@@ -349,7 +360,7 @@ Visualization Manager:
     - Alpha: 1
       Class: nav2_rviz_plugins/ParticleCloud
       Color: 0; 180; 0
-      Enabled: true
+      Enabled: false
       Max Arrow Length: 0.30000001192092896
       Min Arrow Length: 0.019999999552965164
       Name: Amcl Particle Swarm
@@ -361,7 +372,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /particle_cloud
-      Value: true
+      Value: false
     - Class: rviz_common/Group
       Displays:
         - Alpha: 0.30000001192092896
@@ -648,7 +659,7 @@ Visualization Manager:
       Enabled: false
       Name: Realsense
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: MarkerArray
       Namespaces:
         {}
@@ -658,7 +669,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /waypoints
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -805,6 +816,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /received_global_plan
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: false
+      Name: Marker
+      Namespaces:
+        {}
+      Topic:
+        Depth: 100
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /teb_markers
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -843,25 +867,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 5.175455570220947
+      Distance: 6.862303256988525
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.5298597812652588
-        Y: 0.4402177035808563
-        Z: -0.5779014825820923
+        X: -2.2611141204833984
+        Y: -0.6755541563034058
+        Z: -1.077219009399414
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4697964191436768
+      Pitch: 1.0047968626022339
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 4.192396640777588
+      Yaw: 5.862412929534912
     Saved: ~
 Window Geometry:
   Displays:
@@ -881,5 +905,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1737
-  X: 392
-  Y: 231
+  X: 67
+  Y: 239
