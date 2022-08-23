@@ -155,6 +155,11 @@ ament_target_dependencies(CoM_trajectory_publisher
   "geometry_msgs"
 )
 
+add_executable(obstacle_script src/obstacle_script.cpp)
+ament_target_dependencies(obstacle_script
+  "YARP"
+)
+
 set(dependencies
   rclcpp
   geometry_msgs
@@ -215,6 +220,7 @@ install(TARGETS
   chest_projection
   setpoint_converter
   CoM_trajectory_publisher
+  obstacle_script
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
