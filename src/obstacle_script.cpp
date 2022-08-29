@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
     };
     Pose object_pose;
     double increment = 0.001;   //distance increment (in m) added to the y-pose of the obstacle at each loop
-    const double step = 0.001;
+    const double step = 0.0002;
     bool direction = true;  //if true it's positive increment, negative otherwise
     //Main loop until Ctrl-C is caught
     while (ok)
