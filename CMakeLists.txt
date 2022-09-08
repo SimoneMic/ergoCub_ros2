@@ -19,7 +19,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
-FIND_PACKAGE(YARP COMPONENTS os REQUIRED)
+FIND_PACKAGE(YARP COMPONENTS os sig REQUIRED)
 find_package(PCL 1.2 REQUIRED)
 
 find_package(nav2_common REQUIRED)
@@ -147,6 +147,13 @@ ament_target_dependencies(setpoint_converter
   "nav2_util"
 )
 
+add_executable(velocity_setpoint_converter src/velocity_setpoint_converter.cpp)
+ament_target_dependencies(velocity_setpoint_converter
+  "YARP"
+  "rclcpp"
+  "geometry_msgs"
+)
+
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
 ament_target_dependencies(CoM_trajectory_publisher
   "nav_msgs"
@@ -221,6 +228,7 @@ install(TARGETS
   setpoint_converter
   CoM_trajectory_publisher
   obstacle_script
+  velocity_setpoint_converter
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory

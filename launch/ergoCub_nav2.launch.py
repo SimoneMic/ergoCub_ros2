@@ -78,14 +78,14 @@ def generate_launch_description():
         default_value='True',
         description='Use simulation (Gazebo) clock if true')
 
-    #param_dir=os.path.join(
-    #        get_package_share_directory('ergoCub_ros2'),
-    #        'param',
-    #        'ergoCub_nav2.yaml')
     param_dir=os.path.join(
             get_package_share_directory('ergoCub_ros2'),
             'param',
-            'nav2_global_planner_only.yaml')
+            'ergoCub_nav2.yaml')
+    #param_dir=os.path.join(
+    #        get_package_share_directory('ergoCub_ros2'),
+    #        'param',
+    #        'nav2_global_planner_only.yaml')
             
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',

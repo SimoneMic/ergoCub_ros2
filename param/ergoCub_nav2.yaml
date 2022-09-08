@@ -102,10 +102,10 @@ controller_server:
           
       # Robot
               
-      max_vel_x: 0.1    #0.26
-      max_vel_theta: 0.2  #1.0
+      max_vel_x: 0.8    #0.26
+      max_vel_theta: 0.1  #1.0
       max_vel_y: 0.0    #0.0  #Maximum strafing velocity of the robot (should be zero for non-holonomic robots!) 
-      acc_lim_x: 1.0    #2.5
+      acc_lim_x: 2.0    #2.5
       acc_lim_y: 0.5
       acc_lim_theta: 0.5    #3.2
 
@@ -117,7 +117,7 @@ controller_server:
       xy_goal_tolerance: 0.5  #0.2  #Allowed final euclidean distance to the goal position in meters 
       yaw_goal_tolerance: 3.14    #0.2  #Allowed final orientation error in radians         
       free_goal_vel: False      #Remove the goal velocity constraint such that the robot can arrive at the goal with maximum speed 
-          
+      
       # Obstacles
           
       min_obstacle_dist: 0.5    #0.5
