@@ -81,7 +81,7 @@ def generate_launch_description():
     param_dir=os.path.join(
             get_package_share_directory('ergoCub_ros2'),
             'param',
-            'ergoCub_nav2.yaml')
+            'ergoCub_nav2_DWB.yaml')
     #param_dir=os.path.join(
     #        get_package_share_directory('ergoCub_ros2'),
     #        'param',
