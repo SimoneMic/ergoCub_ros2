@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 
 #include <list>
+#include <vector>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -20,13 +21,14 @@ class YarpFeetDataProcessor : public yarp::os::PortReader
 {
 private:
     /* data */
-    geometry_msgs::msg::Twist::ConstPtr m_cmd_vel;
+    geometry_msgs::msg::Twist m_cmd_vel;
     //yarp::os::Port m_port;
     yarp::os::BufferedPort<yarp::sig::VectorOf<double> > m_port;
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/velocity_setopint_converter/talker:o";
     const std::string m_server_name = "/walking-coordinator/goal:i";
     bool m_send_goal;
+    std::vector<double> m_theta_buffer;  //five dimensional buffer
 public:
     YarpFeetDataProcessor()
     {
@@ -38,7 +40,27 @@ public:
 
     void storeSetpoint(const geometry_msgs::msg::Twist::ConstPtr& msg)
     {
-        m_cmd_vel = msg;
+        //std::vector<double>::iterator it;
+        //it = m_theta_buffer.begin();
+        //m_theta_buffer.insert(it, msg->angular.z);
+        //if (m_theta_buffer.size()>5)
+        //{
+        //    m_theta_buffer.pop_back();
+        //}
+        //// Compute the average theta speed
+        //double average_theta_speed = 0.0;
+        //for (auto itr : m_theta_buffer)
+        //{
+        //    average_theta_speed += itr;
+        //}
+        //average_theta_speed /= m_theta_buffer.size();
+        
+        m_cmd_vel.linear = msg->linear;
+        //m_cmd_vel.angular.x = .0;
+        //m_cmd_vel.angular.y = .0;
+        //m_cmd_vel.angular.z = average_theta_speed;
+        //m_cmd_vel->angular.z = average_theta_speed;
+        m_cmd_vel.angular=msg->angular; //for debug ignore buffer
     }
 
     //set the internal flag to whether send the goal or not
@@ -62,13 +84,13 @@ public:
             //todo
             if (m_send_goal)  //This means that I have a new path
             {
-                std::vector<double> msg_out {m_cmd_vel->linear.x, m_cmd_vel->angular.z, m_cmd_vel->linear.y};
+                std::vector<double> msg_out {m_cmd_vel.linear.x, m_cmd_vel.angular.z, m_cmd_vel.linear.y};
                 auto& out = m_port.prepare();
                 out.clear();
-                out.push_back(m_cmd_vel->linear.x);
-                out.push_back(m_cmd_vel->angular.z);
-                out.push_back(m_cmd_vel->linear.y);
-                std::cout << "Cmd_Vel V_x: " << m_cmd_vel->linear.x << " V_theta: " << m_cmd_vel->angular.z << " V_y: " << m_cmd_vel->linear.y << std::endl;
+                out.push_back(m_cmd_vel.linear.x);
+                out.push_back(m_cmd_vel.angular.z);
+                out.push_back(m_cmd_vel.linear.y);
+                std::cout << "Cmd_Vel V_x: " << m_cmd_vel.linear.x << " V_theta: " << m_cmd_vel.angular.z << " V_y: " << m_cmd_vel.linear.y << std::endl;
                 std::cout << "Passing Setpoint V_x: " << out[0] << " V_theta: " << out[1] << " V_y: " << out[2] << std::endl;
                 m_port.write();  //send data only once per double support
                 m_send_goal = false;

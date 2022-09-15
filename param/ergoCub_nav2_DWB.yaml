@@ -57,187 +57,195 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 
 controller_server:
   ros__parameters:
-    use_sim_time: True
-    controller_frequency: 5.0    #20.0
-    min_x_velocity_threshold: 0.0001
+    use_sim_time: true
+    controller_frequency: 5.0
+    min_x_velocity_threshold: 0.01
     min_y_velocity_threshold: 0.5
-    min_theta_velocity_threshold: 0.0001
-    failure_tolerance: 0.0    #0.5
-    odom_topic: /estimated_odom
-    progress_checker_plugin: "progress_checker"
-    goal_checker_plugins: ["general_goal_checker"] 
-    #controller_plugin_types: ["teb_local_planner::TebLocalPlannerROS"]  #only for TEB
-    controller_plugins: ["FollowPath"]
+    min_theta_velocity_threshold: 0.01
+    failure_tolerance: 0.0
+    speed_limit_topic: /speed_limit
+    odom_topic: /odometry
+    progress_checker_plugin: progress_checker
+    goal_checker_plugins:
+    - goal_checker
+    controller_plugins:
+    - FollowPath
 
     # Progress checker parameters
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.1   #0.5
-      movement_time_allowance: 20.0
+      plugin: nav2_controller::SimpleProgressChecker
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+
+    # Goal checker parameters
+    goal_checker:
+      plugin: nav2_controller::SimpleGoalChecker
+      xy_goal_tolerance: 0.4
+      yaw_goal_tolerance: 0.5
+      stateful: true
     
-    general_goal_checker:
-      stateful: True
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5
-      yaw_goal_tolerance: 2.1  #0.5 -> don't care about theta atm
-
-    #TEB
-    #FollowPath:
-    #  plugin: teb_local_planner::TebLocalPlannerROS
-#
-    #  teb_autosize: 1.0
-    #  dt_ref: 0.3   #0.3    #Determines the desired resolution of the trajectory: small values lead to a fine resolution and thus a better approximation of the kinodynamic model, but many points must be optimized (major impact on optimization time). Too high values (> 0.6s) can lead to trajectories that are not feasible anymore due to the poor approximation of the kinodynamic model
-    #  dt_hysteresis: 0.03   #0.1 #Hysteresis for automatic resizing depending on the current temporal resolution, usually approx. 10% of dt_ref is recommended 
-    #  min_samples: 3  #3 -> 30    #Minimum number of samples (should be always greater than 2) 
-    #  max_samples: 1000  #500
-    #  global_plan_overwrite_orientation: False  #False   #Overwrite orientation of local subgoals provided by the global planner (since they often provide only a 2D path) 
-    #  allow_init_with_backwards_motion: False
-    #  max_global_plan_lookahead_dist: 3.0   # 3.0   #Limits the distance to the virtual goal (along the global plan) and thus the number of poses subject to optimization (temporal distance between poses approx dt_ref seconds). But the length is also bounded by the local costmap size 
-    #  force_reinit_new_goal_dist: 1.0   #1.0    #Reinitialize the trajectory if a previous goal is updated with a separation of more than the specified value in meters (skip hot-starting) 
-    #  global_plan_viapoint_sep: -0.1   #0.3 -> 1.0 If positive, via-points are extrected from the global plan (path-following mode). The value determines the resolution of the reference path (min. separation between each two consecutive via-points along the global plan, if negative: disabled). Refer to parameter weight_viapoint for adjusting the intensity. 
-    #  global_plan_prune_distance: 3.0 #1.0
-    #  feasibility_check_no_poses: 2 #2  -> 4
-    #  publish_feedback: False
-    #  exact_arc_length: False   #If true, the planner uses the exact arc length in velocity, acceleration and turning rate computations (-> increased cpu time), otherwise the Euclidean approximation is used. 
-    #      
-    #  # Robot
-    #          
-    #  max_vel_x: 0.8    #0.26
-    #  max_vel_theta: 0.2  #1.0
-    #  max_vel_y: 0.0    #0.0  #Maximum strafing velocity of the robot (should be zero for non-holonomic robots!) 
-    #  acc_lim_x: 2.0    #2.5
-    #  acc_lim_y: 0.5
-    #  acc_lim_theta: 0.5    #3.2
-#
-    #  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
-    #    type: "circular"
-    #    radius: 0.4 # for type "circular"
-#
-    #  # GoalTolerance
-    #  xy_goal_tolerance: 0.5  #0.2  #Allowed final euclidean distance to the goal position in meters 
-    #  yaw_goal_tolerance: 3.14    #0.2  #Allowed final orientation error in radians         
-    #  free_goal_vel: False      #Remove the goal velocity constraint such that the robot can arrive at the goal with maximum speed 
-    #  
-    #  # Obstacles
-    #      
-    #  min_obstacle_dist: 0.5    #0.5
-    #  inflation_dist: 0.6   #Buffer zone around obstacles with non-zero penalty costs (should be larger than min_obstacle_dist in order to take effect). Also refer to the weight weight_inflation. 
-    #  include_costmap_obstacles: True       #Specify if obstacles of the local costmap should be taken into account. Each cell that is marked as obstacle is considered as a point-obstacle. Therefore do not choose a very small resolution of the costmap since it increases computation time. In future releases this circumstance is going to be addressed as well as providing an additional api for dynamic obstacles. 
-    #  costmap_obstacles_behind_robot_dist: 1.0    #1.0 #Limit the occupied local costmap obstacles taken into account for planning behind the robot (specify distance in meters). 
-    #  obstacle_poses_affected: 20   #30 #Number of nearest neighbors on the trajectory taken into account (increases the number of distance calculations for each obstacle). For small obstacles and point obstacles, this value can be small (<10). Increase the value again if the trajectory is not smooth enough close to obstacles. 
-#
-    #  dynamic_obstacle_inflation_dist: 0.6
-    #  include_dynamic_obstacles: True   #If set to true, the motion of obstacles with non-zero velocity (provided via user-supplied obstacles on topic ~/obstacles or obtained from the costmap_converter) is predicted and considered during optimization via a constant velocity model.
-#
-    #  legacy_obstacle_association: False  #False # The strategy of connecting trajectory poses with obstacles for optimization has been modified (see changelog). You can switch to the old/previous strategy by setting this parameter to true. Old strategy: for each obstacle, find the nearest TEB pose; new strategy: for each teb pose, find only "relevant" obstacles. 
-    #  obstacle_association_force_inclusion_factor: 2.0  #1.5 # The non-legacy obstacle association strategy tries to connect only relevant obstacles with the discretized trajectory during optimization. But all obstacles within a specifed distance are forced to be included (as a multiple of min_obstacle_dist). E.g. choose 2.0 in order toenforce the consideration obstacles within a radius of 2.0*min_obstacle_dist. [This parameter is used only if parameter legacy_obstacle_association is false] 
-    #  obstacle_association_cutoff_factor: 5.0 #5.0 # See obstacle_association_force_inclusion_factor, but beyond a multiple of [value]*min_obstacle_dist all obstacles are ignored during optimization. Parameter obstacle_association_force_inclusion_factor is processed first. [This parameter is used only if parameter legacy_obstacle_association is false] 
- #
-    #  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
-    #  costmap_converter_spin_thread: True
-    #  costmap_converter_rate: 5
-#
-    #  # Optimization
-    #      
-    #  no_inner_iterations: 5    #5
-    #  no_outer_iterations: 4    #4
-    #  optimization_activate: True
-    #  optimization_verbose: False
-    #  penalty_epsilon: 0.09  #0.1 #Add a small safety margin to penalty functions for hard-constraint approximations needs to be < max_vel_x
-    #  obstacle_cost_exponent: 4.0
-    #  weight_max_vel_x: 1.0   #1.0  #Optimization weight for satisfying the maximum allowed translational velocity 
-    #  weight_max_vel_theta: 1.0   #Optimization weight for satisfying the maximum allowed angular velocity 
-    #  weight_acc_lim_x: 0.0   #1.0  removed weight_acc_lim_* -> You can ignore acceleration limits by setting the weight to 0.0. By doing so the complexity of the optimization and hence the computation time can be reduced. 
-    #  weight_acc_lim_y: 0.0
-    #  weight_acc_lim_theta: 0.0 #1.0
-    #  weight_kinematics_nh: 1000.0    #reduce this significantly in order to adjust the tradeoff between compliant longitudinal motion and non-compliant lateral motion (strafing). 
-    #  weight_kinematics_forward_drive: 20.0 #1.0 -> 30.0 #Optimization weight for forcing the robot to choose only forward directions (positive transl. velocities). A small weight (e.g. 1.0) still allows driving backwards. A value around 1000 almost prevents backward driving (but cannot be guaranteed). 
-    #  weight_kinematics_turning_radius: 1.0
-    #  weight_optimaltime: 0.1   #1.0 0.5- must be > 0 #Optimization weight for contracting the trajectory w.r.t transition/execution time 
-    #  weight_shortest_path: 0.0
-    #  weight_obstacle: 100.0  #Optimization weight for keeping a minimum distance from obstacles
-    #  weight_inflation: 0.2   #0.1 #Optimization weight for the inflation penalty (should be small). 
-    #  weight_dynamic_obstacle: 10.0 # not in use yet   
-    #  weight_dynamic_obstacle_inflation: 0.2
-    #  weight_viapoint: 50.0
-    #  weight_adapt_factor: 2.0  #    Some special weights (currently weight_obstacle) are repeatedly scaled by this factor in each outer TEB iteration (weight_new = weight_old*factor). Increasing weights iteratively instead of setting a huge value a-priori leads to better numerical conditions of the underlying optimization problem. 
-#
-    #  # Homotopy Class Planner
-#
-    #  enable_homotopy_class_planning: True
-    #  enable_multithreading: True
-    #  max_number_classes: 2   #4  #Restrict the number of alternative trajectories that are subject to optimization. Often 2 alternatives are sufficient (avoid obstacle on the left or right side). 
-    #  selection_cost_hysteresis: 1.0  #Specify how much trajectory cost must a new candidate have w.r.t. a previously selected trajectory in order to be selected (selection if new_cost < old_cost*factor). 
-    #  selection_prefer_initial_plan: 1.0
-    #  selection_obst_cost_scale: 100.0  #Extra scaling of obstacle cost terms just for selecting the 'best' candidate. 
-    #  selection_alternative_time_cost: False #True #If true, time cost (sum of squared time differences) is replaced by the total transition time (sum of time differences). 
-#
-    #  roadmap_graph_no_samples: 15  #15 #Specify the number of samples generated for creating the roadmap graph 
-    #  roadmap_graph_area_width: 6.0   #6.0  #Random keypoints/waypoints are sampled in a rectangular region between start and goal. Specify the width of that region in meters. 
-    #  roadmap_graph_area_length_scale: 1.0  #Should be the factor multiplier to lenghten the distance from start-to goal, used to build the area where the sampling happens
-    #  h_signature_prescaler: 1.0  #1.0 -> 0.5 #Scale internal parameter (H-signature) that is used to distinguish between homotopy classes. Warning: reduce this parameter only, if you observe problems with too many obstacles in the local cost map, do not choose it extremly low, otherwise obstacles cannot be distinguished from each other (0.2<value<=1). 
-    #  h_signature_threshold: 0.1  #0.1 #Two H-signatures are assumed to be equal, if both the difference of real parts and complex parts are below the specified threshold. 
-    #  obstacle_heading_threshold: 0.0  #1.0 ->0.2 #Specify the value of the scalar product between obstacle heading and goal heading in order to take them (obstacles) into account for exploration. 
-    #  switching_blocking_period: 0.0  #0.0 #Specify a time duration in seconds that needs to be expired before a switch to a new equivalence class is allowed. 
-    #  viapoints_all_candidates: True  #If true, all trajectories of different topologies are attached to the set of via-points, otherwise only the trajectory sharing the same topology as the initial/global plan is connected with them (no effect on test_optim_node)
-    #  delete_detours_backwards: True    #True
-    #  detours_orientation_tolerance: 1.57    #3.14
-    #  max_ratio_detours_duration_best_duration: 5.0   #3.0 -> 5.0
-    #  visualize_hc_graph: True   #False
-    #  visualize_with_time_as_z_axis_scale: 0.0
-#
-    #  # Recovery
-    #  
-    #  shrink_horizon_backup: True   #    Allows the planner to shrink the horizon temporary (50%) in case of automatically detected issues (e.g. infeasibility). Also see parameter shrink_horizon_min_duration. 
-    #  shrink_horizon_min_duration: 10.0
-    #  oscillation_recovery: True
-    #  oscillation_v_eps: 0.1
-    #  oscillation_omega_eps: 0.1
-    #  oscillation_recovery_min_duration: 10.0
-    #  oscillation_filter_duration: 10.0
-
     # DWB parameters
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: True
-      min_vel_x: 0.0
-      min_vel_y: 0.0   #-0.2
-      max_vel_x: 0.9
+      plugin: dwb_core::DWBLocalPlanner
+
+      # Generic
+      prune_distance: 2.0   #2.0
+      prune_plan: true
+      shorten_transformed_plan: true
+      debug_trajectory_details: false
+      trajectory_generator_name: dwb_plugins::StandardTrajectoryGenerator
+      transform_tolerance: 0.2
+      short_circuit_trajectory_evaluation: true
+      xy_goal_tolerance: 0.4
+
+      # XYTheta Iterator
+      vx_samples: 20
+      vy_samples: 0
+      vtheta_samples: 40
+
+      # Kinematic Parameters
+      max_vel_x: 1.0
       max_vel_y: 0.0
-      max_vel_theta: 0.2  #1.0
+      max_vel_theta: 0.2
+      min_vel_x: 0.0
+      min_vel_y: 0.0
       min_speed_xy: 0.0
-      max_speed_xy: 1.0
+      max_speed_xy: 0.4
       min_speed_theta: 0.0
-      # Add high threshold velocity for turtlebot 3 issue.
-      # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
       acc_lim_x: 2.5
-      acc_lim_y: 2.5
-      acc_lim_theta: 0.5 #3.2
+      acc_lim_y: 0.0
+      acc_lim_theta: 3.2
       decel_lim_x: -2.5
       decel_lim_y: 0.0
-      decel_lim_theta: -0.5 #-3.2
-      vx_samples: 20
-      vy_samples: 8
-      vtheta_samples: 15  #20
-      sim_time: 5.0   #1.7
-      linear_granularity: 0.05    #0.05
-      angular_granularity: 0.2  #0.025
-      transform_tolerance: 0.5  #0.2
-      xy_goal_tolerance: 0.5
-      trans_stopped_velocity: 0.25
-      short_circuit_trajectory_evaluation: True
-      stateful: True
-      #critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      critics: ["PathDist"]
-      #BaseObstacle.scale: 0.02
-      #PathAlign.scale: 32.0
-      #PathAlign.forward_point_distance: 0.05  #0.1
-      #GoalAlign.scale: 24.0
-      #GoalAlign.forward_point_distance: 0.1
+      decel_lim_theta: -3.2
+      trans_stopped_velocity: 0.01
+
+      # Publisher params
+      publish_cost_grid_pc: false
+      publish_evaluation: false
+      publish_global_plan: true
+      publish_local_plan: true
+      publish_trajectories: false
+      publish_transformed_plan: false
+      marker_lifetime: 0.1
+
+      # Trajectory generator
+      sim_time: 2.0
+      discretize_by_time: false
+      time_granularity: 0.5
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      include_last_point: true
+
+      # Critics
+      critics:
+      - RotateToGoal
+      - Oscillation
+      - BaseObstacle
+      - GoalAlign
+      - PathAlign
+      - PathDist
+      - GoalDist
+      BaseObstacle.scale: 0.02
+      BaseObstacle.sum_scores: false
+
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.1
+
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.1
+
       PathDist.scale: 32.0
-      #GoalDist.scale: 24.0
-      #RotateToGoal.scale: 32.0
-      #RotateToGoal.slowing_factor: 5.00.1
+
+      Oscillation.oscillation_reset_angle: 0.2
+      Oscillation.oscillation_reset_dist: 0.05
+      Oscillation.oscillation_reset_time: -1.0
+      Oscillation.scale: 1.0
+      Oscillation.x_only_threshold: 0.05
+
+      GoalDist.scale: 24.0
+
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
+
+#controller_server:
+#  ros__parameters:
+#    use_sim_time: True
+#    controller_frequency: 5.0    #20.0
+#    min_x_velocity_threshold: 0.0001
+#    min_y_velocity_threshold: 0.5
+#    min_theta_velocity_threshold: 0.0001
+#    failure_tolerance: 0.0    #0.5
+#    odom_topic: /estimated_odom
+#    progress_checker_plugin: "progress_checker"
+#    goal_checker_plugins: ["general_goal_checker"] 
+#    controller_plugins: ["FollowPath"]
+#
+#    # Progress checker parameters
+#    progress_checker:
+#      plugin: "nav2_controller::SimpleProgressChecker"
+#      required_movement_radius: 0.5   #0.5
+#      movement_time_allowance: 20.0
+#    
+#    general_goal_checker:
+#      stateful: True
+#      plugin: "nav2_controller::SimpleGoalChecker"
+#      xy_goal_tolerance: 0.5
+#      yaw_goal_tolerance: 2.1  #0.5 -> don't care about theta atm
+#
+#    # DWB parameters
+#    FollowPath:
+#      plugin: "dwb_core::DWBLocalPlanner"
+#      debug_trajectory_details: True
+#      min_vel_x: 0.0
+#      min_vel_y: 0.0   #-0.2
+#      max_vel_x: 0.9
+#      max_vel_y: 0.0
+#      max_vel_theta: 0.2  #1.0
+#      min_speed_xy: 0.0
+#      max_speed_xy: 1.0
+#      min_speed_theta: 0.0
+#      # Add high threshold velocity for turtlebot 3 issue.
+#      # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
+#      acc_lim_x: 2.5
+#      acc_lim_y: 2.5
+#      acc_lim_theta: 3.2 #3.2
+#      decel_lim_x: -2.5
+#      decel_lim_y: 0.0
+#      decel_lim_theta: -3.2 #-3.2
+#      vx_samples: 20
+#      vy_samples: 5
+#      vtheta_samples: 20  #20
+#      sim_time: 5.0   #1.7
+#      linear_granularity: 0.05    #0.05
+#      angular_granularity: 0.025  #0.025
+#      transform_tolerance: 0.2  #0.2
+#      xy_goal_tolerance: 0.5
+#      trans_stopped_velocity: 0.25
+#      short_circuit_trajectory_evaluation: True
+#      stateful: True
+#      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+#      #critics: ["PathDist"]
+#      #BaseObstacle.scale: 0.02
+#      #PathAlign.scale: 32.0
+#      #PathAlign.forward_point_distance: 0.05  #0.1
+#      #GoalAlign.scale: 24.0
+#      #GoalAlign.forward_point_distance: 0.1
+#      #PathDist.scale: 32.0
+#      #GoalDist.scale: 24.0
+#      #RotateToGoal.scale: 32.0
+#      #RotateToGoal.slowing_factor: 5.00
+#      BaseObstacle.scale: 0.02
+#      PathAlign.scale: 1.0
+#      GoalAlign.scale: 1.0
+#      PathDist.scale: 1.0
+#      GoalDist.scale: 1.0
+#      RotateToGoal.scale: 1.0
+#      PathAlign.forward_point_distance: 0.1
+#      GoalAlign.forward_point_distance: 0.1
+#      RotateToGoal.slowing_factor: 5.0
+#      RotateToGoal.lookahead_time: -1.0
 
 local_costmap:
   local_costmap:
@@ -341,14 +349,15 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 2.0
-      publish_frequency: 1.0
+      update_frequency: 5.0   #should be higher than global_planner freq
+      publish_frequency: 5.0
       global_frame: map
       robot_base_frame: virtual_unicycle_base 
       use_sim_time: True
       robot_radius: 0.4
       resolution: 0.05
       trinary_costmap: true
+      always_send_full_costmap: True
       track_unknown_space: true
       plugins: 
       - static_layer
@@ -358,20 +367,43 @@ global_costmap:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
         footprint_clearing_enabled: True
-        combination_method: 0
-        observation_sources: scan
+        max_obstacle_height: 2.0
+        combination_method: 1
+        observation_sources: scan pointcloud_mark pointcloud_clear
         scan:
-          topic: /filtered_scan_compensated #filtered_scan_compensated
-          max_obstacle_height: 2.0  #2.0
-          min_obstacle_height: -1.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 20.0
+          topic: /filtered_scan_compensated
+          obstacle_max_range: 20.0
+          obstacle_min_range: 0.1
+          raytrace_max_range: 25.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 6.0
-          obstacle_min_range: 0.05
-          inf_is_valid: False
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          inf_is_valid: false
+        pointcloud_mark:  # no frame set, uses frame from message
+          topic: /camera_rgbd/depth/points
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.05
+          obstacle_max_range: 5.0
+          obstacle_min_range: 0.4
+          raytrace_max_range: 6.0
+          raytrace_min_range: 0.0
+          clearing: false
+          marking: true
+          data_type: "PointCloud2"
+        pointcloud_clear:  # no frame set, uses frame from message
+          topic: /camera_rgbd/depth/points
+          max_obstacle_height: 4.8
+          min_obstacle_height: -4.8
+          obstacle_max_range: 5.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 12.0
+          raytrace_min_range: 0.0
+          clearing: true
+          marking: false
+          data_type: "PointCloud2"
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -380,53 +412,66 @@ global_costmap:
         transform_tolerance: 0.2
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
         cost_scaling_factor: 2.5    #3.0
         inflation_radius: 1.0    #0.55
         inflate_unknown: false
-        inflate_around_unknown: true
-      always_send_full_costmap: True
-  global_costmap_client:
-    ros__parameters:
-      use_sim_time: true
-  global_costmap_rclcpp_node:
-    ros__parameters:
-      use_sim_time: true
-#obstacle_layer:
-      #  plugin: "nav2_costmap_2d::ObstacleLayer"
-      #  enabled: True
-      #  footprint_clearing_enabled: true
-      #  observation_sources: pointcloud
-      #  pointcloud:
-      #    topic: /camera_rgbd/depth/points #/filtered_scan   #scan
-      #    max_obstacle_height: 2.0
-      #    min_obstacle_height: 0.1
-      #    clearing: True
-      #    marking: True
-      #    data_type: "PointCloud2"
-      #    obstacle_max_range: 6.0
-      #    obstacle_min_range: 0.5   #can see the robots hands
-      #    raytrace_max_range: 6.0
-      #    raytrace_min_range: 0.0
-      #voxel_layer:
-      #  plugin: "nav2_costmap_2d::VoxelLayer"
-      #  enabled: false
-      #  publish_voxel_map: True
-      #  origin_z: 0.0
-      #  z_resolution: 0.05
-      #  z_voxels: 16
-      #  max_obstacle_height: 2.0
-      #  mark_threshold: 0
-      #  observation_sources: pointcloud
-      #  scan:
-      #    topic: /camera_rgbd/depth/points #/filtered_scan   #scan
-      #    max_obstacle_height: 3.0
-      #    clearing: True
-      #    marking: True
-      #    data_type: "PointCloud2"
-      #    raytrace_max_range: 5.0
-      #    raytrace_min_range: 0.0
-      #    obstacle_max_range: 3.5
-      #    obstacle_min_range: 0.0
+        inflate_around_unknown: false
+
+#global_costmap:
+#  global_costmap:
+#    ros__parameters:
+#      update_frequency: 2.0
+#      publish_frequency: 1.0
+#      global_frame: map
+#      robot_base_frame: virtual_unicycle_base 
+#      use_sim_time: True
+#      robot_radius: 0.4
+#      resolution: 0.05
+#      trinary_costmap: true
+#      track_unknown_space: true
+#      plugins: 
+#      - static_layer
+#      - obstacle_layer
+#      - inflation_layer
+#      obstacle_layer:
+#        plugin: "nav2_costmap_2d::ObstacleLayer"
+#        enabled: True
+#        footprint_clearing_enabled: True
+#        combination_method: 0
+#        observation_sources: scan
+#        scan:
+#          topic: /filtered_scan_compensated #filtered_scan_compensated
+#          max_obstacle_height: 2.0  #2.0
+#          min_obstacle_height: -1.0
+#          clearing: True
+#          marking: True
+#          data_type: "LaserScan"
+#          raytrace_max_range: 20.0
+#          raytrace_min_range: 0.0
+#          obstacle_max_range: 6.0
+#          obstacle_min_range: 0.05
+#          inf_is_valid: False
+#      static_layer:
+#        plugin: "nav2_costmap_2d::StaticLayer"
+#        map_subscribe_transient_local: True
+#        enabled: True
+#        subscribe_to_updates: True
+#        transform_tolerance: 0.2
+#      inflation_layer:
+#        plugin: "nav2_costmap_2d::InflationLayer"
+#        cost_scaling_factor: 2.5    #3.0
+#        inflation_radius: 1.0    #0.55
+#        inflate_unknown: false
+#        inflate_around_unknown: true
+#      always_send_full_costmap: True
+#  global_costmap_client:
+#    ros__parameters:
+#      use_sim_time: true
+#  global_costmap_rclcpp_node:
+#    ros__parameters:
+#      use_sim_time: true
+
 map_server:
   ros__parameters:
     use_sim_time: True

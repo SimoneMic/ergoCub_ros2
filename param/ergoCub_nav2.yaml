@@ -4,35 +4,45 @@ bt_navigator:
     global_frame: map
     robot_base_frame: virtual_unicycle_base #projection   #base_link
     odom_topic: /estimated_odom
-    default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
+    #default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
     bt_loop_duration: 10
     default_server_timeout: 40
     enable_groot_monitoring: True
     groot_zmq_publisher_port: 1666
     groot_zmq_server_port: 1667
+    # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
+    # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
+    # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
+    # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
     plugin_lib_names:
     - nav2_compute_path_to_pose_action_bt_node
     - nav2_compute_path_through_poses_action_bt_node
+    - nav2_smooth_path_action_bt_node
     - nav2_follow_path_action_bt_node
-    - nav2_back_up_action_bt_node
     - nav2_spin_action_bt_node
     - nav2_wait_action_bt_node
+    - nav2_back_up_action_bt_node
+    - nav2_drive_on_heading_bt_node
     - nav2_clear_costmap_service_bt_node
     - nav2_is_stuck_condition_bt_node
     - nav2_goal_reached_condition_bt_node
     - nav2_goal_updated_condition_bt_node
+    - nav2_globally_updated_goal_condition_bt_node
+    - nav2_is_path_valid_condition_bt_node
     - nav2_initial_pose_received_condition_bt_node
     - nav2_reinitialize_global_localization_service_bt_node
     - nav2_rate_controller_bt_node
     - nav2_distance_controller_bt_node
     - nav2_speed_controller_bt_node
     - nav2_truncate_path_action_bt_node
+    - nav2_truncate_path_local_action_bt_node
     - nav2_goal_updater_node_bt_node
     - nav2_recovery_node_bt_node
     - nav2_pipeline_sequence_bt_node
     - nav2_round_robin_node_bt_node
     - nav2_transform_available_condition_bt_node
     - nav2_time_expired_condition_bt_node
+    - nav2_path_expiring_timer_condition
     - nav2_distance_traveled_condition_bt_node
     - nav2_single_trigger_bt_node
     - nav2_is_battery_low_condition_bt_node
@@ -42,6 +52,12 @@ bt_navigator:
     - nav2_planner_selector_bt_node
     - nav2_controller_selector_bt_node
     - nav2_goal_checker_selector_bt_node
+    - nav2_controller_cancel_bt_node
+    - nav2_path_longer_on_approach_bt_node
+    - nav2_wait_cancel_bt_node
+    - nav2_spin_cancel_bt_node
+    - nav2_back_up_cancel_bt_node
+    - nav2_drive_on_heading_cancel_bt_node
 
 bt_navigator_rclcpp_node:
   ros__parameters:
@@ -72,7 +88,7 @@ controller_server:
     # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.1   #0.5
+      required_movement_radius: 0.5   #0.5
       movement_time_allowance: 20.0
     
     general_goal_checker:
@@ -88,11 +104,11 @@ controller_server:
       teb_autosize: 1.0
       dt_ref: 0.3   #0.3    #Determines the desired resolution of the trajectory: small values lead to a fine resolution and thus a better approximation of the kinodynamic model, but many points must be optimized (major impact on optimization time). Too high values (> 0.6s) can lead to trajectories that are not feasible anymore due to the poor approximation of the kinodynamic model
       dt_hysteresis: 0.03   #0.1 #Hysteresis for automatic resizing depending on the current temporal resolution, usually approx. 10% of dt_ref is recommended 
-      min_samples: 3  #3 -> 30    #Minimum number of samples (should be always greater than 2) 
+      min_samples: 30  #3 -> 30    #Minimum number of samples (should be always greater than 2) 
       max_samples: 1000  #500
       global_plan_overwrite_orientation: False  #False   #Overwrite orientation of local subgoals provided by the global planner (since they often provide only a 2D path) 
       allow_init_with_backwards_motion: False
-      max_global_plan_lookahead_dist: 3.0   # 3.0   #Limits the distance to the virtual goal (along the global plan) and thus the number of poses subject to optimization (temporal distance between poses approx dt_ref seconds). But the length is also bounded by the local costmap size 
+      max_global_plan_lookahead_dist: 4.0   # 3.0   #Limits the distance to the virtual goal (along the global plan) and thus the number of poses subject to optimization (temporal distance between poses approx dt_ref seconds). But the length is also bounded by the local costmap size 
       force_reinit_new_goal_dist: 1.0   #1.0    #Reinitialize the trajectory if a previous goal is updated with a separation of more than the specified value in meters (skip hot-starting) 
       global_plan_viapoint_sep: -0.1   #0.3 -> 1.0 If positive, via-points are extrected from the global plan (path-following mode). The value determines the resolution of the reference path (min. separation between each two consecutive via-points along the global plan, if negative: disabled). Refer to parameter weight_viapoint for adjusting the intensity. 
       global_plan_prune_distance: 3.0 #1.0
@@ -102,12 +118,12 @@ controller_server:
           
       # Robot
               
-      max_vel_x: 0.8    #0.26
-      max_vel_theta: 0.2  #1.0
+      max_vel_x: 0.26    #0.26
+      max_vel_theta: 1.0  #1.0
       max_vel_y: 0.0    #0.0  #Maximum strafing velocity of the robot (should be zero for non-holonomic robots!) 
-      acc_lim_x: 2.0    #2.5
-      acc_lim_y: 0.5
-      acc_lim_theta: 0.5    #3.2
+      acc_lim_x: 2.5    #2.5
+      acc_lim_y: 0.0
+      acc_lim_theta: 3.2    #3.2
 
       footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
         type: "circular"
@@ -138,7 +154,7 @@ controller_server:
       costmap_converter_rate: 5
 
       # Optimization
-          
+      
       no_inner_iterations: 5    #5
       no_outer_iterations: 4    #4
       optimization_activate: True
@@ -150,8 +166,8 @@ controller_server:
       weight_acc_lim_x: 0.0   #1.0  removed weight_acc_lim_* -> You can ignore acceleration limits by setting the weight to 0.0. By doing so the complexity of the optimization and hence the computation time can be reduced. 
       weight_acc_lim_y: 0.0
       weight_acc_lim_theta: 0.0 #1.0
-      weight_kinematics_nh: 1000.0    #reduce this significantly in order to adjust the tradeoff between compliant longitudinal motion and non-compliant lateral motion (strafing). 
-      weight_kinematics_forward_drive: 20.0 #1.0 -> 30.0 #Optimization weight for forcing the robot to choose only forward directions (positive transl. velocities). A small weight (e.g. 1.0) still allows driving backwards. A value around 1000 almost prevents backward driving (but cannot be guaranteed). 
+      weight_kinematics_nh: 10.0    #reduce this significantly in order to adjust the tradeoff between compliant longitudinal motion and non-compliant lateral motion (strafing). 
+      weight_kinematics_forward_drive: 200.0 #1.0 -> 30.0 #Optimization weight for forcing the robot to choose only forward directions (positive transl. velocities). A small weight (e.g. 1.0) still allows driving backwards. A value around 1000 almost prevents backward driving (but cannot be guaranteed). 
       weight_kinematics_turning_radius: 1.0
       weight_optimaltime: 0.1   #1.0 0.5- must be > 0 #Optimization weight for contracting the trajectory w.r.t transition/execution time 
       weight_shortest_path: 0.0
@@ -195,56 +211,14 @@ controller_server:
       oscillation_omega_eps: 0.1
       oscillation_recovery_min_duration: 10.0
       oscillation_filter_duration: 10.0
-    # DWB parameters
-    #FollowPath:
-    #  plugin: "dwb_core::DWBLocalPlanner"
-    #  debug_trajectory_details: True
-    #  min_vel_x: -0.2
-    #  min_vel_y: -0.2
-    #  max_vel_x: 0.2
-    #  max_vel_y: 0.42
-    #  max_vel_theta: 0.1  #1.0
-    #  min_speed_xy: -0.2
-    #  max_speed_xy: 0.4
-    #  min_speed_theta: -0.1
-    #  # Add high threshold velocity for turtlebot 3 issue.
-    #  # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-    #  acc_lim_x: 2.5
-    #  acc_lim_y: 2.5
-    #  acc_lim_theta: 0.0 #3.2
-    #  decel_lim_x: -2.5
-    #  decel_lim_y: -2.5
-    #  decel_lim_theta: -0.1 #-3.2
-    #  vx_samples: 20
-    #  vy_samples: 10
-    #  vtheta_samples: 15  #20
-    #  sim_time: 5.0   #1.7
-    #  linear_granularity: 0.05    #0.05
-    #  angular_granularity: 0.2  #0.025
-    #  transform_tolerance: 0.5  #0.2
-    #  xy_goal_tolerance: 0.5
-    #  trans_stopped_velocity: 0.25
-    #  short_circuit_trajectory_evaluation: True
-    #  stateful: True
-    #  #critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-    #  critics: ["PathDist"]
-    #  #BaseObstacle.scale: 0.02
-    #  #PathAlign.scale: 32.0
-    #  #PathAlign.forward_point_distance: 0.05  #0.1
-    #  #GoalAlign.scale: 24.0
-    #  #GoalAlign.forward_point_distance: 0.1
-    #  PathDist.scale: 32.0
-    #  #GoalDist.scale: 24.0
-    #  #RotateToGoal.scale: 32.0
-    #  #RotateToGoal.slowing_factor: 5.00.1
 
 local_costmap:
   local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 5.0
-      global_frame: map  #odom
-      robot_base_frame: virtual_unicycle_base #projection
+      global_frame: odom  #odom
+      robot_base_frame: virtual_unicycle_base
       use_sim_time: True
       rolling_window: true
       width: 10    #3
@@ -319,17 +293,7 @@ local_costmap:
           clearing: true
           marking: false
           data_type: "PointCloud2"
-        #pointcloud:  # no frame set, uses frame from message
-        #  topic: /camera_rgbd/depth/points
-        #  max_obstacle_height: 2.0
-        #  min_obstacle_height: 0.05
-        #  obstacle_max_range: 5.0
-        #  obstacle_min_range: 0.5   #can see the robots hands
-        #  raytrace_max_range: 6.0
-        #  raytrace_min_range: 0.5
-        #  clearing: true
-        #  marking: true
-        #  data_type: "PointCloud2"
+          
   local_costmap_client:
     ros__parameters:
       use_sim_time: True
