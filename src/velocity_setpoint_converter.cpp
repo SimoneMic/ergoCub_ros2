@@ -16,6 +16,9 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
+//command for feet wrenches merge
+//yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches
+
 //Class used for YARP port callbacks. Monitors the feet contacts state.
 class YarpFeetDataProcessor : public yarp::os::PortReader
 {
@@ -27,12 +30,13 @@ private:
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/velocity_setopint_converter/talker:o";
     const std::string m_server_name = "/walking-coordinator/goal:i";
-    bool m_send_goal;
+    bool m_send_goal, m_step_check;
     std::vector<double> m_theta_buffer;  //five dimensional buffer
 public:
     YarpFeetDataProcessor()
     {
         m_send_goal = false;
+        m_step_check = true; //init to true to send at least the first command
         //Connection to the walking-controller goal port
         m_port.open(m_port_name);
         yarp::os::Network::connect(m_port_name, m_server_name);     //todo - check for connection or errors
@@ -40,27 +44,8 @@ public:
 
     void storeSetpoint(const geometry_msgs::msg::Twist::ConstPtr& msg)
     {
-        //std::vector<double>::iterator it;
-        //it = m_theta_buffer.begin();
-        //m_theta_buffer.insert(it, msg->angular.z);
-        //if (m_theta_buffer.size()>5)
-        //{
-        //    m_theta_buffer.pop_back();
-        //}
-        //// Compute the average theta speed
-        //double average_theta_speed = 0.0;
-        //for (auto itr : m_theta_buffer)
-        //{
-        //    average_theta_speed += itr;
-        //}
-        //average_theta_speed /= m_theta_buffer.size();
-        
         m_cmd_vel.linear = msg->linear;
-        //m_cmd_vel.angular.x = .0;
-        //m_cmd_vel.angular.y = .0;
-        //m_cmd_vel.angular.z = average_theta_speed;
-        //m_cmd_vel->angular.z = average_theta_speed;
-        m_cmd_vel.angular=msg->angular; //for debug ignore buffer
+        m_cmd_vel.angular=msg->angular;
     }
 
     //set the internal flag to whether send the goal or not
@@ -78,11 +63,12 @@ public:
             return false;
         }
         //Condition for double feet support -> Should also check if in the middle of the CoM path during oscillation???
-        if (b.get(0).asFloat64() > m_sensor_threshold && b.get(1).asFloat64() > m_sensor_threshold)
+        if (b.get(2).asFloat64() > m_sensor_threshold && b.get(8).asFloat64() > m_sensor_threshold)
         {
+            
             //check for data sanity before transmitting it
             //todo
-            if (m_send_goal)  //This means that I have a new path
+            if (m_send_goal & m_step_check)  //This means that I have a new path
             {
                 std::vector<double> msg_out {m_cmd_vel.linear.x, m_cmd_vel.angular.z, m_cmd_vel.linear.y};
                 auto& out = m_port.prepare();
@@ -94,8 +80,22 @@ public:
                 std::cout << "Passing Setpoint V_x: " << out[0] << " V_theta: " << out[1] << " V_y: " << out[2] << std::endl;
                 m_port.write();  //send data only once per double support
                 m_send_goal = false;
+                //if I have a stop command, I should still be able to send a new one: I have two commands per double support
+                if (abs(m_cmd_vel.linear.x)<=0.01 && abs(m_cmd_vel.angular.z)<=0.01 && abs(m_cmd_vel.linear.y)<=0.01)
+                {
+                    m_step_check = true;
+                }
+                else
+                {
+                    m_step_check = false;
+                }
             }
         }
+        else
+        {
+            m_step_check = true;
+        }
+        
         return true;
     }
 };  //End of class YarpFeetDataProcessor : public yarp::os::PortReader
@@ -128,7 +128,7 @@ public:
 
         //Create YarpFeetDataProcessor object
         m_feet_state_port.open(m_feet_state_port_name);
-        yarp::os::Network::connect("/base-estimator/contacts/stateAndNormalForce:o", m_feet_state_port_name);
+        yarp::os::Network::connect("/feetWrenches", m_feet_state_port_name);   //base-estimator/contacts/stateAndNormalForce:o
         m_feet_state_port.setReader(m_processor);
     }
 };  //End of class SetpointConverter

@@ -60,11 +60,11 @@ controller_server:
     use_sim_time: true
     controller_frequency: 5.0
     min_x_velocity_threshold: 0.01
-    min_y_velocity_threshold: 0.5
+    min_y_velocity_threshold: 0.01    #0.5
     min_theta_velocity_threshold: 0.01
     failure_tolerance: 0.0
     speed_limit_topic: /speed_limit
-    odom_topic: /odometry
+    odom_topic: /estimated_odom   #/odometry
     progress_checker_plugin: progress_checker
     goal_checker_plugins:
     - goal_checker
@@ -75,7 +75,7 @@ controller_server:
     progress_checker:
       plugin: nav2_controller::SimpleProgressChecker
       required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      movement_time_allowance: 20.0
 
     # Goal checker parameters
     goal_checker:
@@ -100,23 +100,23 @@ controller_server:
 
       # XYTheta Iterator
       vx_samples: 20
-      vy_samples: 0
-      vtheta_samples: 40
+      vy_samples: 8
+      vtheta_samples: 15
 
       # Kinematic Parameters
       max_vel_x: 1.0
-      max_vel_y: 0.0
+      max_vel_y: 0.5
       max_vel_theta: 0.2
       min_vel_x: 0.0
       min_vel_y: 0.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.4
+      max_speed_xy: 1.2
       min_speed_theta: 0.0
       acc_lim_x: 2.5
-      acc_lim_y: 0.0
+      acc_lim_y: 2.5
       acc_lim_theta: 3.2
       decel_lim_x: -2.5
-      decel_lim_y: 0.0
+      decel_lim_y: -2.5
       decel_lim_theta: -3.2
       trans_stopped_velocity: 0.01
 
