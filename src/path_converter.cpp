@@ -39,17 +39,17 @@ private:
     yarp::os::BufferedPort<yarp::sig::VectorOf<double> > m_port;
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/path_converter/talker:o";
-    const std::string m_server_name = "/path:i";
+    const std::string m_server_name = "/navigation/path:i";
     bool m_send_goal, m_step_check;
     bool m_initialized = false;  //used for passing tf reference objects
-
+    bool send_once = true;
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
 
-    bool transformPlan(nav_msgs::msg::Path &transformed_plan_, geometry_msgs::msg::TransformStamped & tf_)
+    nav_msgs::msg::Path transformPlan(geometry_msgs::msg::TransformStamped & tf_)
     {
         if (m_untransformed_path->poses.empty()) {
             std::cerr << "Received plan with zero length" << std::endl;
-            return false;
+            throw std::runtime_error("Received plan with zero length");
         }
         
         // let's get the pose of the robot in the frame of the plan
@@ -64,8 +64,10 @@ private:
         
         // Transform the near part of the global plan into the robot's frame of reference.
         //nav_2d_msgs::msg::Path2D transformed_plan;
+        nav_msgs::msg::Path transformed_plan_ = *m_untransformed_path;
         transformed_plan_.header.frame_id = "projection";
         transformed_plan_.header.stamp = m_untransformed_path->header.stamp;
+        
         
         // Helper function for the transform below. Converts a pose2D from global
         // frame to local
@@ -85,16 +87,12 @@ private:
         //    transformGlobalPoseToLocal);
 
         //Transform the whole path
-        for (size_t i = 0; i < m_untransformed_path->poses.size(); ++i)
+        //std::cout << "Transform the whole path for loop" << std::endl;
+        for (int i = 0; i < m_untransformed_path->poses.size(); ++i)
         {
-            if (i>transformed_plan_.poses.size()-1)
-            {
-                geometry_msgs::msg::PoseStamped empty_tmp_pose;
-                transformed_plan_.poses.push_back(empty_tmp_pose);
-            }
             tf2::doTransform(m_untransformed_path->poses.at(i), transformed_plan_.poses.at(i), tf_);
+            std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
         }
-        
         // Remove the portion of the global plan that we've already passed so we don't
         // process it on the next iteration.
         //if (prune_plan_) {
@@ -104,9 +102,9 @@ private:
         
         if (transformed_plan_.poses.empty()) {
             std::cerr << "Resulting plan has 0 poses in it." << std::endl;
-            return false;
+            throw std::runtime_error("Resulting plan has 0 poses in it");
         }
-        return true;
+        return transformed_plan_;
     }
 
 public:
@@ -116,7 +114,7 @@ public:
         m_step_check = true; //init to true to send at least the first command
         //Connection to the walking-controller goal port
         m_port.open(m_port_name);
-        yarp::os::Network::connect(m_port_name, m_server_name);     //todo - check for connection or errors
+        yarp::os::Network::connect(m_port_name, m_server_name);     
     };
 
     void init(std::shared_ptr<tf2_ros::Buffer> &buffer)
@@ -144,13 +142,13 @@ public:
             std::cout << "Bad Yarp connection \n";
             return false;
         }
+        
         //Condition for double feet support -> Should also check if in the middle of the CoM path during oscillation???
         if (b.get(2).asFloat64() > m_sensor_threshold && b.get(8).asFloat64() > m_sensor_threshold)
         {
-            
             //check for data sanity before transmitting it
             //todo
-            if (m_send_goal & m_step_check)  //This means that I have a new path to send
+            if (m_send_goal & m_step_check & send_once)  //This means that I have a new path to send
             {
                 try
                 {
@@ -158,48 +156,44 @@ public:
                     nav_msgs::msg::Path transformed_path;
                     if (m_initialized)
                     {
-                        geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("root_link", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
+                        
+                        geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
                         //tf2::doTransform(*untransformed_path, transformed_path, TF);
-                        if (transformPlan(transformed_path, TF))
+                        nav_msgs::msg::Path transformed_plan = transformPlan(TF);
+                        if (transformed_plan.poses.size()>0)
                         {
+                            std::cout << "Creating port buffer" << std::endl;
                             //Convert Path to yarp vector
-                            for (size_t i = 0; i < transformed_path.poses.size(); ++i)
-                            {
-                                m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
-                                m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
-                                std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
-                            }
                             auto& out = m_port.prepare();
                             out.clear();
-                            out = m_goal_path;
+                            for (int i = 0; i < transformed_path.poses.size(); ++i)
+                            {
+                                //m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
+                                //m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
+                                out.push_back(transformed_path.poses.at(i).pose.position.x);
+                                out.push_back(transformed_path.poses.at(i).pose.position.y);
+                                std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
+                            }
                             m_port.write();  //send data only once per double support
                             m_send_goal = false;
+                            send_once = false;
+                        }
+                        else
+                        {
+                            std::cout << "Returned empty transformed path" << std::endl;
                         }
                     }
                     else
                     {
-                        /* code */
+                        std::cout << "Failed to transform path" << std::endl;
                     }
-                    
-                    //Convert Path to yarp vector
-                    for (size_t i = 0; i < transformed_path.poses.size(); ++i)
-                    {
-                        m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
-                        m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
-                        std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
-                    }
-                    auto& out = m_port.prepare();
-                    out.clear();
-                    out = m_goal_path;
-                    m_port.write();  //send data only once per double support
-                    m_send_goal = false;
                     //if I have a stop command, I should still be able to send a new one: I have two commands per double support
                     //todo?
                 }
                 catch(const std::exception& e)
                 {
-                    std::cerr << e.what() << '\n';
+                    std::cerr << "Exception in Transform Path" << e.what() << '\n';
                 }
             }
         }
