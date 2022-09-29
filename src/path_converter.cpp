@@ -10,9 +10,12 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/path.hpp"
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include "nav_2d_msgs/msg/pose2_d_stamped.hpp"
+#include "nav_2d_msgs/msg/path2_d.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 #include <list>
 #include <vector>
@@ -30,17 +33,82 @@ class YarpFeetDataProcessor : public yarp::os::PortReader
 {
 private:
     /* data */
-    nav_msgs::msg::Path::ConstPtr untransformed_path;
-    yarp::sig::VectorOf<double> goal_path;
+    nav_msgs::msg::Path::ConstPtr m_untransformed_path;
+    yarp::sig::VectorOf<double> m_goal_path;
     //yarp::os::Port m_port;
     yarp::os::BufferedPort<yarp::sig::VectorOf<double> > m_port;
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/path_converter/talker:o";
     const std::string m_server_name = "/path:i";
     bool m_send_goal, m_step_check;
-    bool initialized = false;  //used for passing tf reference objects
+    bool m_initialized = false;  //used for passing tf reference objects
 
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
+
+    bool transformPlan(nav_msgs::msg::Path &transformed_plan_, geometry_msgs::msg::TransformStamped & tf_)
+    {
+        if (m_untransformed_path->poses.empty()) {
+            std::cerr << "Received plan with zero length" << std::endl;
+            return false;
+        }
+        
+        // let's get the pose of the robot in the frame of the plan
+        //nav_2d_msgs::msg::Pose2DStamped robot_pose;
+        //if (!nav_2d_utils::transformPose(
+        //    tf_, plan_.header.frame_id, pose,
+        //    robot_pose, transform_tolerance_))
+        //{
+        //    std::cerr << "Unable to transform robot pose into global plan's frame" << std::endl;
+        //    return false;
+        //}
+        
+        // Transform the near part of the global plan into the robot's frame of reference.
+        //nav_2d_msgs::msg::Path2D transformed_plan;
+        transformed_plan_.header.frame_id = "projection";
+        transformed_plan_.header.stamp = m_untransformed_path->header.stamp;
+        
+        // Helper function for the transform below. Converts a pose2D from global
+        // frame to local
+        //auto transformGlobalPoseToLocal = [&](const auto & global_plan_pose) {
+        //    nav_2d_msgs::msg::Pose2DStamped stamped_pose, transformed_pose;
+        //    stamped_pose.header.frame_id = global_plan_.header.frame_id;
+        //    stamped_pose.pose = global_plan_pose;
+        //    nav_2d_utils::transformPose(
+        //      tf_, transformed_plan.header.frame_id,
+        //      stamped_pose, transformed_pose, transform_tolerance_);
+        //    return transformed_pose.pose;
+        //  };
+        
+        //std::transform(
+        //    transformation_begin, transformation_end,
+        //    std::back_inserter(transformed_plan.poses),
+        //    transformGlobalPoseToLocal);
+
+        //Transform the whole path
+        for (size_t i = 0; i < m_untransformed_path->poses.size(); ++i)
+        {
+            if (i>transformed_plan_.poses.size()-1)
+            {
+                geometry_msgs::msg::PoseStamped empty_tmp_pose;
+                transformed_plan_.poses.push_back(empty_tmp_pose);
+            }
+            tf2::doTransform(m_untransformed_path->poses.at(i), transformed_plan_.poses.at(i), tf_);
+        }
+        
+        // Remove the portion of the global plan that we've already passed so we don't
+        // process it on the next iteration.
+        //if (prune_plan_) {
+        //  global_plan_.poses.erase(begin(global_plan_.poses), transformation_begin);
+        //  pub_->publishGlobalPlan(global_plan_);
+        //}
+        
+        if (transformed_plan_.poses.empty()) {
+            std::cerr << "Resulting plan has 0 poses in it." << std::endl;
+            return false;
+        }
+        return true;
+    }
+
 public:
     YarpFeetDataProcessor()
     {
@@ -54,12 +122,12 @@ public:
     void init(std::shared_ptr<tf2_ros::Buffer> &buffer)
     {
         m_tf_buffer = buffer;
-        initialized = true;
+        m_initialized = true;
     }
 
     void storeSetpoint(const nav_msgs::msg::Path::ConstPtr &msg)
     {
-        untransformed_path = msg;
+        m_untransformed_path = msg;
     }
 
     //set the internal flag to whether send the goal or not
@@ -88,11 +156,26 @@ public:
                 {
                     //Transform Path
                     nav_msgs::msg::Path transformed_path;
-                    if (initialized)
+                    if (m_initialized)
                     {
-                        geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("root_link", untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
+                        geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("root_link", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
-                        tf2::doTransform(*untransformed_path, transformed_path, TF);
+                        //tf2::doTransform(*untransformed_path, transformed_path, TF);
+                        if (transformPlan(transformed_path, TF))
+                        {
+                            //Convert Path to yarp vector
+                            for (size_t i = 0; i < transformed_path.poses.size(); ++i)
+                            {
+                                m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
+                                m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
+                                std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
+                            }
+                            auto& out = m_port.prepare();
+                            out.clear();
+                            out = m_goal_path;
+                            m_port.write();  //send data only once per double support
+                            m_send_goal = false;
+                        }
                     }
                     else
                     {
@@ -102,13 +185,13 @@ public:
                     //Convert Path to yarp vector
                     for (size_t i = 0; i < transformed_path.poses.size(); ++i)
                     {
-                        goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
-                        goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
+                        m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
+                        m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
                         std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
                     }
                     auto& out = m_port.prepare();
                     out.clear();
-                    out = goal_path;
+                    out = m_goal_path;
                     m_port.write();  //send data only once per double support
                     m_send_goal = false;
                     //if I have a stop command, I should still be able to send a new one: I have two commands per double support
@@ -120,13 +203,13 @@ public:
                 }
             }
         }
-        else
-        {
+        else {
             m_step_check = true;
         }
         
         return true;
     }
+    
 };  //End of class YarpFeetDataProcessor : public yarp::os::PortReader
 
 
