@@ -34,15 +34,15 @@ class YarpFeetDataProcessor : public yarp::os::PortReader
 private:
     /* data */
     nav_msgs::msg::Path::ConstPtr m_untransformed_path;
-    yarp::sig::VectorOf<double> m_goal_path;
-    //yarp::os::Port m_port;
-    yarp::os::BufferedPort<yarp::sig::VectorOf<double> > m_port;
+    yarp::os::BufferedPort<yarp::sig::VectorOf<double>> m_port;
+    /* Consts*/
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/path_converter/talker:o";
     const std::string m_server_name = "/navigation/path:i";
+    /* Vars*/
     bool m_send_goal, m_step_check;
     bool m_initialized = false;  //used for passing tf reference objects
-    bool send_once = true;
+    bool send_once = true;  //for ebug - used to send only one path
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
 
     nav_msgs::msg::Path transformPlan(geometry_msgs::msg::TransformStamped & tf_)
@@ -53,22 +53,11 @@ private:
         }
         
         // let's get the pose of the robot in the frame of the plan
-        //nav_2d_msgs::msg::Pose2DStamped robot_pose;
-        //if (!nav_2d_utils::transformPose(
-        //    tf_, plan_.header.frame_id, pose,
-        //    robot_pose, transform_tolerance_))
-        //{
-        //    std::cerr << "Unable to transform robot pose into global plan's frame" << std::endl;
-        //    return false;
-        //}
-        
+
         // Transform the near part of the global plan into the robot's frame of reference.
-        //nav_2d_msgs::msg::Path2D transformed_plan;
         nav_msgs::msg::Path transformed_plan_ = *m_untransformed_path;
         transformed_plan_.header.frame_id = "projection";
         transformed_plan_.header.stamp = m_untransformed_path->header.stamp;
-        
-        
         // Helper function for the transform below. Converts a pose2D from global
         // frame to local
         //auto transformGlobalPoseToLocal = [&](const auto & global_plan_pose) {
@@ -152,11 +141,8 @@ public:
             {
                 try
                 {
-                    //Transform Path
-                    nav_msgs::msg::Path transformed_path;
                     if (m_initialized)
                     {
-                        
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
                         //tf2::doTransform(*untransformed_path, transformed_path, TF);
@@ -166,18 +152,18 @@ public:
                             std::cout << "Creating port buffer" << std::endl;
                             //Convert Path to yarp vector
                             auto& out = m_port.prepare();
+                            std::cout << "Clearing port buffer" << std::endl;
                             out.clear();
-                            for (int i = 0; i < transformed_path.poses.size(); ++i)
+                            for (int i = 0; i < transformed_plan.poses.size(); ++i)
                             {
-                                //m_goal_path.push_back(transformed_path.poses.at(i).pose.position.x);
-                                //m_goal_path.push_back(transformed_path.poses.at(i).pose.position.y);
-                                out.push_back(transformed_path.poses.at(i).pose.position.x);
-                                out.push_back(transformed_path.poses.at(i).pose.position.y);
-                                std::cout << "Passing Path i-th element: " << i << " : " << transformed_path.poses.at(i).pose.position.x << " Y: " << transformed_path.poses.at(i).pose.position.y << std::endl;
+                                out.push_back(transformed_plan.poses.at(i).pose.position.x);
+                                out.push_back(transformed_plan.poses.at(i).pose.position.y);
+                                std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
                             }
+                            std::cout << "Writing port buffer" << std::endl;
                             m_port.write();  //send data only once per double support
                             m_send_goal = false;
-                            send_once = false;
+                            send_once = false;  //only for debug
                         }
                         else
                         {
@@ -193,7 +179,7 @@ public:
                 }
                 catch(const std::exception& e)
                 {
-                    std::cerr << "Exception in Transform Path" << e.what() << '\n';
+                    std::cerr << "Exception in Transform Path: " << e.what() << '\n';
                 }
             }
         }
