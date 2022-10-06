@@ -25,6 +25,8 @@ using std::placeholders::_1;
 
 //Config file path: /home/user1/robotology-superbuild/build/install/share/ICUBcontrib/contexts/dcmWalknigNavigation/navigation.ini
 
+// walkingNavigation path: 
+
 //command for feet wrenches merge
 //yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches
 
@@ -35,10 +37,14 @@ private:
     /* data */
     nav_msgs::msg::Path::ConstPtr m_untransformed_path;
     yarp::os::BufferedPort<yarp::sig::VectorOf<double>> m_port;
+    yarp::os::Port m_rpc_port;
     /* Consts*/
     const double m_sensor_threshold = 100.0;
     const std::string m_port_name = "/path_converter/talker:o";
     const std::string m_server_name = "/navigation/path:i";
+    const std::string m_rpc_server_name = "/navigation/rpc";
+    const std::string m_rpc_client_name = "/path_converter/rpc";
+
     /* Vars*/
     bool m_send_goal, m_step_check;
     bool m_initialized = false;  //used for passing tf reference objects
@@ -104,6 +110,9 @@ public:
         //Connection to the walking-controller goal port
         m_port.open(m_port_name);
         yarp::os::Network::connect(m_port_name, m_server_name);     
+        //rpc connection
+        m_rpc_port.open(m_rpc_client_name);
+        yarp::os::Network::connect(m_rpc_client_name, m_rpc_server_name);
     };
 
     void init(std::shared_ptr<tf2_ros::Buffer> &buffer)
@@ -137,7 +146,7 @@ public:
         {
             //check for data sanity before transmitting it
             //todo
-            if (m_send_goal & m_step_check & send_once)  //This means that I have a new path to send
+            if (m_send_goal && m_step_check && send_once)  //This means that I have a new path to send
             {
                 try
                 {
@@ -145,10 +154,24 @@ public:
                     {
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
-                        //tf2::doTransform(*untransformed_path, transformed_path, TF);
                         nav_msgs::msg::Path transformed_plan = transformPlan(TF);
                         if (transformed_plan.poses.size()>0)
                         {
+                            // RPC port
+                            if (true)   //tmp for flag todo
+                            {
+                                yarp::os::Bottle cmd, response;
+                                cmd.addString("replan");
+                                m_rpc_port.write(cmd, response);
+                                if (!response.get(0).asBool())
+                                {
+                                    std::cerr << "Replanning command sent but not received!" << std::endl;
+                                }
+                                else{
+                                    std::cout << "Replanning command received" << std::endl;
+                                }
+                            }
+                            
                             std::cout << "Creating port buffer" << std::endl;
                             //Convert Path to yarp vector
                             auto& out = m_port.prepare();
@@ -163,7 +186,7 @@ public:
                             std::cout << "Writing port buffer" << std::endl;
                             m_port.write();  //send data only once per double support
                             m_send_goal = false;
-                            send_once = false;  //only for debug
+                            //send_once = false;  //only for debug
                         }
                         else
                         {
@@ -175,7 +198,7 @@ public:
                         std::cout << "Failed to transform path" << std::endl;
                     }
                     //if I have a stop command, I should still be able to send a new one: I have two commands per double support
-                    //todo?
+                    //todo ?
                 }
                 catch(const std::exception& e)
                 {
