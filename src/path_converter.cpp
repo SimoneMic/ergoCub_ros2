@@ -111,8 +111,15 @@ public:
         m_port.open(m_port_name);
         yarp::os::Network::connect(m_port_name, m_server_name);     
         //rpc connection
+        std::cout << "Connecting RPC ..." << std::endl;
         m_rpc_port.open(m_rpc_client_name);
         yarp::os::Network::connect(m_rpc_client_name, m_rpc_server_name);
+        if(yarp::os::Network::isConnected(m_rpc_client_name, m_rpc_server_name)){
+            std::cout << "Ports Connected" << std::endl;
+        } else {
+            std::cout << m_rpc_server_name << " NOT PRESENT" << std::endl;
+        }
+        
     };
 
     void init(std::shared_ptr<tf2_ros::Buffer> &buffer)
@@ -160,6 +167,7 @@ public:
                             // RPC port
                             if (true)   //tmp for flag todo
                             {
+                                std::cout << "Replanning ..." << std::endl;
                                 yarp::os::Bottle cmd, response;
                                 cmd.addString("replan");
                                 m_rpc_port.write(cmd, response);
@@ -186,7 +194,7 @@ public:
                             std::cout << "Writing port buffer" << std::endl;
                             m_port.write();  //send data only once per double support
                             m_send_goal = false;
-                            //send_once = false;  //only for debug
+                            send_once = false;  //only for debug
                         }
                         else
                         {
@@ -250,8 +258,13 @@ public:
         //Create YarpFeetDataProcessor object
         m_feet_state_port.open(m_feet_state_port_name);
         yarp::os::Network::connect("/feetWrenches", m_feet_state_port_name);   //base-estimator/contacts/stateAndNormalForce:o
-        m_feet_state_port.setReader(m_processor);
-        m_processor.init(m_tf_buffer_in);
+        if(yarp::os::Network::isConnected("/feetWrenches", m_feet_state_port_name)){
+            RCLCPP_INFO(this->get_logger(), "YARP Ports connected successfully");
+            m_feet_state_port.setReader(m_processor);
+            m_processor.init(m_tf_buffer_in);
+        } else {
+            RCLCPP_ERROR(this->get_logger(), "[YARP] /feetWrenches NOT PRESENT:\n execute the merge command on the feet wrenches:\n yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches");
+        }
     }
 };  //End of class PathConverter
 
