@@ -16,6 +16,7 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "geometry_msgs/msg/twist.hpp"
 
 #include <list>
 #include <vector>
@@ -53,6 +54,7 @@ private:
     bool m_first_time = true; //used for replanning
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
     std::mutex m_mutex;
+    bool m_stop_cmd = false;    //flag for an external stop command
 
     nav_msgs::msg::Path transformPlan(geometry_msgs::msg::TransformStamped & tf_)
     {
@@ -142,6 +144,11 @@ public:
         m_send_goal = val;
     }
 
+    void stop_status(bool val)
+    {
+        m_stop_cmd = val;
+    }
+
     bool read(yarp::os::ConnectionReader& connection) override
     {
         std::lock_guard<std::mutex> guard(m_mutex);
@@ -163,6 +170,48 @@ public:
                 {
                     if (m_initialized)
                     {
+                        if (m_stop_cmd)
+                        {
+                            std::cout << "STOPPING ..." << std::endl;
+                            yarp::os::Bottle cmd, response;
+                            if(!m_first_time)
+                            {
+                                cmd.addString("replan");
+                                m_rpc_port.write(cmd, response);
+                                if (!response.get(0).asBool())
+                                {
+                                    std::cerr << "Replanning command sent but not received! " << response.get(0).asInt64() << std::endl;
+                                }
+                                else{
+                                    std::cout << "Replanning command received: " << response.get(0).asInt64() << std::endl;
+                                }    
+                            }
+                            std::cout << "Creating port buffer" << std::endl;
+                            //Convert Path to yarp vector
+                            auto& out = m_port.prepare();
+                            std::cout << "Clearing port buffer" << std::endl;
+                            out.clear();
+                            out.push_back(0.0);
+                            out.push_back(0.0);
+                            
+                            m_port.write();  //send data only once per double support
+
+                            cmd.clear();
+                            response.clear();
+                            cmd.addString("persist");
+                            m_rpc_port.write(cmd, response);
+                            
+                            if (!response.get(0).asBool())
+                            {
+                                std::cerr << "Persist command sent but not received! " << response.get(0).asInt64() << std::endl;
+                            }
+                            else
+                            {
+                                std::cout << "Persist command received " << response.get(0).asInt64() << std::endl;
+                            } 
+                            return true;
+                        }
+                        
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
                         nav_msgs::msg::Path transformed_plan = transformPlan(TF);
@@ -182,7 +231,6 @@ public:
                                 else{
                                     std::cout << "Replanning command received: " << response.get(0).asInt64() << std::endl;
                                 }    
-                                                   
                             }
                             std::cout << "Creating port buffer" << std::endl;
                             //Convert Path to yarp vector
@@ -237,7 +285,7 @@ public:
             }
             else
             {
-                if (!m_first_time)
+                if (!m_first_time && !m_stop_cmd)
                 {
                     yarp::os::Bottle cmd, response;
                     cmd.clear();
@@ -253,12 +301,10 @@ public:
                     } 
                 }
             }
-            
         }
         else {
             m_step_check = true;
         }
-        
         return true;
     }
     
@@ -269,11 +315,14 @@ public:
 class PathConverter : public rclcpp::Node
 {
 private:
-    const std::string m_topic_name = "/local_plan";     
+    const double zero_speed_threshold = 1e-03;
+    const std::string m_topic_name = "/local_plan";  
+    const std::string m_vel_topic = "/cmd_vel";   
     yarp::os::Port m_feet_state_port;
     const std::string m_feet_state_port_name = "/setopint_converter/feet_state:i";
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_setpoint_sub;
     YarpFeetDataProcessor m_processor;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_velocity_sub;
 
     std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer_in;
@@ -284,6 +333,19 @@ private:
         m_processor.storeSetpoint(msg_in);
         m_processor.set_permission(true);
     }
+
+    void vel_callback(const geometry_msgs::msg::Twist::ConstPtr & msg_in)
+    {
+        if ( std::abs(msg_in->linear.x) <= zero_speed_threshold && std::abs(msg_in->linear.y) <= zero_speed_threshold)
+        {
+            m_processor.stop_status(true);
+        }
+        else
+        {
+            m_processor.stop_status(false);
+        }
+        
+    }
 public:
     PathConverter() : rclcpp::Node("path_converter_node")
     {   
@@ -291,6 +353,11 @@ public:
             m_topic_name,
             10,
             std::bind(&PathConverter::msg_callback, this, _1)
+        );
+        m_velocity_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+            m_vel_topic, 
+            10, 
+            std::bind(&PathConverter::vel_callback, this, _1)
         );
         // TFs
         m_tf_buffer_in = std::make_shared<tf2_ros::Buffer>(this->get_clock());    //share to the yarp port
