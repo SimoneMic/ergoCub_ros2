@@ -19,6 +19,7 @@
 
 #include <list>
 #include <vector>
+#include <mutex>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -40,7 +41,7 @@ private:
     yarp::os::Port m_rpc_port;
     /* Consts*/
     const double m_sensor_threshold = 100.0;
-    const std::string m_port_name = "/path_converter/talker:o";
+    const std::string m_port_name = "/navigation_hsp/path:o";
     const std::string m_server_name = "/navigation/path:i";
     const std::string m_rpc_server_name = "/navigation/rpc";
     const std::string m_rpc_client_name = "/path_converter/rpc";
@@ -48,8 +49,10 @@ private:
     /* Vars*/
     bool m_send_goal, m_step_check;
     bool m_initialized = false;  //used for passing tf reference objects
-    bool send_once = true;  //for ebug - used to send only one path
+    bool send_once = true;  //for debug - used to send only one path
+    bool m_first_time = true; //used for replanning
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
+    std::mutex m_mutex;
 
     nav_msgs::msg::Path transformPlan(geometry_msgs::msg::TransformStamped & tf_)
     {
@@ -141,10 +144,11 @@ public:
 
     bool read(yarp::os::ConnectionReader& connection) override
     {
+        std::lock_guard<std::mutex> guard(m_mutex);
         yarp::os::Bottle b;
         bool ok = b.read(connection);
         if (!ok) {
-            std::cout << "Bad Yarp connection \n";
+            std::cout << "Bad Yarp connection " << std::endl;
             return false;
         }
         
@@ -165,21 +169,21 @@ public:
                         if (transformed_plan.poses.size()>0)
                         {
                             // RPC port
-                            if (true)   //tmp for flag todo
+                            yarp::os::Bottle cmd, response;
+                            if(!m_first_time)
                             {
                                 std::cout << "Replanning ..." << std::endl;
-                                yarp::os::Bottle cmd, response;
                                 cmd.addString("replan");
                                 m_rpc_port.write(cmd, response);
                                 if (!response.get(0).asBool())
                                 {
-                                    std::cerr << "Replanning command sent but not received!" << std::endl;
+                                    std::cerr << "Replanning command sent but not received! " << response.get(0).asInt64() << std::endl;
                                 }
                                 else{
-                                    std::cout << "Replanning command received" << std::endl;
-                                }
+                                    std::cout << "Replanning command received: " << response.get(0).asInt64() << std::endl;
+                                }    
+                                                   
                             }
-                            
                             std::cout << "Creating port buffer" << std::endl;
                             //Convert Path to yarp vector
                             auto& out = m_port.prepare();
@@ -191,9 +195,27 @@ public:
                                 out.push_back(transformed_plan.poses.at(i).pose.position.y);
                                 std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
                             }
+                            // Persist command tells the walking controller to actuate the plan
+                            
                             std::cout << "Writing port buffer" << std::endl;
                             m_port.write();  //send data only once per double support
+                            
+                            cmd.clear();
+                            response.clear();
+                            cmd.addString("persist");
+                            m_rpc_port.write(cmd, response);
+                            
+                            if (!response.get(0).asBool())
+                            {
+                                std::cerr << "Persist command sent but not received! " << response.get(0).asInt64() << std::endl;
+                            }
+                            else
+                            {
+                                std::cout << "Persist command received " << response.get(0).asInt64() << std::endl;
+                            } 
+                            m_first_time = false;  
                             m_send_goal = false;
+                            m_step_check = false;
                             send_once = false;  //only for debug
                         }
                         else
@@ -213,6 +235,25 @@ public:
                     std::cerr << "Exception in Transform Path: " << e.what() << '\n';
                 }
             }
+            else
+            {
+                if (!m_first_time)
+                {
+                    yarp::os::Bottle cmd, response;
+                    cmd.clear();
+                    cmd.addString("persist");
+                    m_rpc_port.write(cmd, response);
+                    if (!response.get(0).asBool())
+                    {
+                        std::cerr << "[Outer if] Persist command sent but not received!" << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "[Outer if] Persist command received" << std::endl;
+                    } 
+                }
+            }
+            
         }
         else {
             m_step_check = true;
@@ -228,7 +269,7 @@ public:
 class PathConverter : public rclcpp::Node
 {
 private:
-    const std::string m_topic_name = "/local_plan";     //subscribe to cmd_vel
+    const std::string m_topic_name = "/local_plan";     
     yarp::os::Port m_feet_state_port;
     const std::string m_feet_state_port_name = "/setopint_converter/feet_state:i";
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_setpoint_sub;
