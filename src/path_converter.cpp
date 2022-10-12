@@ -164,7 +164,7 @@ public:
         {
             //check for data sanity before transmitting it
             //todo
-            if (m_send_goal && m_step_check && send_once)  //This means that I have a new path to send
+            if (m_send_goal && m_step_check)  //This means that I have a new path to send
             {
                 try
                 {
@@ -211,7 +211,25 @@ public:
                             } 
                             return true;
                         }
-                        
+
+                        // FOR DEBUG ONLY SEND ONE PATH
+                        if (!m_first_time && !m_stop_cmd)
+                            {
+                                yarp::os::Bottle cmd, response;
+                                cmd.clear();
+                                cmd.addString("persist");
+                                m_rpc_port.write(cmd, response);
+                                if (!response.get(0).asBool())
+                                {
+                                    std::cerr << "[DEBUG RETURN] Persist command sent but not received!" << std::endl;
+                                }
+                                else
+                                {
+                                    std::cout << "[DEBUG RETURN] Persist command received" << std::endl;
+                                } 
+                                return true;
+                            }
+
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
                         nav_msgs::msg::Path transformed_plan = transformPlan(TF);
@@ -264,7 +282,7 @@ public:
                             m_first_time = false;  
                             m_send_goal = false;
                             m_step_check = false;
-                            send_once = false;  //only for debug
+                            //send_once = false;  //only for debug
                         }
                         else
                         {
@@ -316,7 +334,7 @@ class PathConverter : public rclcpp::Node
 {
 private:
     const double zero_speed_threshold = 1e-03;
-    const std::string m_topic_name = "/local_plan";  
+    const std::string m_topic_name = "/plan";  // topic for TEB: /local_plan - for DWB: /plan
     const std::string m_vel_topic = "/cmd_vel";   
     yarp::os::Port m_feet_state_port;
     const std::string m_feet_state_port_name = "/setopint_converter/feet_state:i";
@@ -336,9 +354,10 @@ private:
 
     void vel_callback(const geometry_msgs::msg::Twist::ConstPtr & msg_in)
     {
-        if ( std::abs(msg_in->linear.x) <= zero_speed_threshold && std::abs(msg_in->linear.y) <= zero_speed_threshold)
+        if ( std::abs(msg_in->linear.x) <= zero_speed_threshold && std::abs(msg_in->linear.y) <= zero_speed_threshold && std::abs(msg_in->angular.z) <= zero_speed_threshold)
         {
             m_processor.stop_status(true);
+            RCLCPP_INFO(this->get_logger(), "DETECTED STOP COMMAND");
         }
         else
         {
