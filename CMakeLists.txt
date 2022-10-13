@@ -154,8 +154,8 @@ ament_target_dependencies(velocity_setpoint_converter
   "geometry_msgs"
 )
 
-add_executable(path_converter src/path_converter.cpp)
-ament_target_dependencies(path_converter
+add_executable(piecewise_path_converter src/piecewise_path_converter.cpp)
+ament_target_dependencies(piecewise_path_converter
   "YARP"
   "rclcpp"
   "nav_msgs"
@@ -241,7 +241,7 @@ install(TARGETS
   CoM_trajectory_publisher
   obstacle_script
   velocity_setpoint_converter
-  path_converter
+  piecewise_path_converter
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
