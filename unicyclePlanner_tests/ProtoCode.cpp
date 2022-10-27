@@ -200,10 +200,10 @@ private:
                 RCLCPP_INFO(this->get_logger(), "Exiting at No: %f", i);
                 break;
             }
-            RCLCPP_INFO(this->get_logger(), "Setting waypont No: %f", i);
+            //RCLCPP_INFO(this->get_logger(), "Setting waypont No: %f", i);
             //do i need to transform each pose to the previous one? (shouldn't)
             iDynTree::Vector2 yDes;
-            yDes(0) = path.poses.at(i).pose.position.x + 0.05;
+            yDes(0) = path.poses.at(i).pose.position.x+ 0.05;
             yDes(1) = path.poses.at(i).pose.position.y; 
             planner.addPersonFollowingDesiredTrajectoryPoint(i * freq, yDes);   //scales each point
         }
@@ -212,7 +212,7 @@ private:
 
 
 struct Configuration {
-    double initTime = 0.0, endTime = 80.0, dT = 0.01, K = 10, dX = 0.2, dY = 0.0;
+    double initTime = 0.0, endTime = 50.0, dT = 0.01, K = 10, dX = 0.2, dY = 0.0;
     double maxL = 0.2, minL = 0.05, minW = 0.08, maxAngle = iDynTree::deg2rad(45), minAngle = iDynTree::deg2rad(5);
     double nominalW = 0.14, maxT = 10, minT = 3, nominalT = 4, timeWeight = 2.5, positionWeight = 1;
     bool swingLeft = true;
@@ -368,7 +368,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 
         std::cerr << "First test." << std::endl;
         iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-        //iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+        iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
 
         // publish markers on ros2
         RCLCPP_INFO(this->get_logger(), "Publishing markers");
