@@ -28,6 +28,11 @@ find_package(nav2_core REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+find_package(iDynTree 4.3.0 REQUIRED)
+find_package(UnicyclePlanner 0.5.2 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
 include_directories(/opt/ros/humble/include/tf2)
@@ -42,6 +47,22 @@ nav2_package()
 
 include_directories(
   trajectory_controller/include
+)
+
+
+add_executable(ProtoCode unicyclePlanner_tests/ProtoCode.cpp)
+target_link_libraries(ProtoCode UnicyclePlanner ${iDynTree_LIBRARIES} 
+                      )
+ament_target_dependencies(ProtoCode
+  "std_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "nav_msgs"
+  "rclcpp"
+  "visualization_msgs"
+  "UnicyclePlanner"
+  "tf2"
+  "nav2_util"
 )
 
 add_executable(managed_odom src/odometry_lifeCycle.cpp)
@@ -242,6 +263,7 @@ install(TARGETS
   obstacle_script
   velocity_setpoint_converter
   piecewise_path_converter
+  ProtoCode
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
