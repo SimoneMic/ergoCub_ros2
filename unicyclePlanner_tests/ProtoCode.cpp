@@ -70,7 +70,7 @@ private:
                 RCLCPP_INFO(this->get_logger(), "Quitting callback");
                 return;
             }
-            //debug_once = true;
+            debug_once = true;
             m_path_msg = msg_in;
             // Each time a path is published I need to transform it to the robot frame
             geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
@@ -302,7 +302,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 
     return true;
 }
-    
+     
     bool plannerTest(const nav_msgs::msg::Path &path){
         //std::lock_guard<std::mutex> lock(m_mutex);
         Configuration conf;
@@ -344,11 +344,21 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 
         planner.addTerminalStep(true);
         planner.startWithLeft(conf.swingLeft);
-
+ 
         //Generate desired trajectory
         clock_t start = clock();
+
+        std::vector<UnicycleState> converted_path;
+        UnicycleState tmp_pose;
+        for (size_t i = 0; i < path.poses.size(); ++i)
+        {
+            tmp_pose.angle = path.poses[i].pose.orientation.z;
+            tmp_pose.position(0) = path.poses[i].pose.position.x;
+            tmp_pose.position(1) = path.poses[i].pose.position.y;
+            converted_path.push_back(tmp_pose);
+        } 
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
-        iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path));
+        //iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path));
         std::cerr <<"Populating the trajectory took " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         std::shared_ptr<FootPrint> left, right;
@@ -357,10 +367,11 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         iDynTree::Vector2 initPosition;
         initPosition(0) = 0.1;      //0.3
         initPosition(1) = 0.1;      //-0.5
-        left->addStep(initPosition, iDynTree::deg2rad(0), 0); //fake initialization
+        //left->addStep(initPosition, iDynTree::deg2rad(0), 0); //fake initialization
 
         start = clock();
-        iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
+        //iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
+        iDynTree::assertTrue(planner.computeNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
         std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         StepList leftSteps = left->getSteps();
