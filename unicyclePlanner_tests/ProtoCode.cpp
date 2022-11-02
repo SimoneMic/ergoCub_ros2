@@ -15,7 +15,7 @@
 #include <memory>
 #include <iostream>
 #include <ctime>
-
+ 
 // Custom ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -38,7 +38,7 @@ class RosNode : public rclcpp::Node
 private:
     std::mutex m_mutex;
     /* consts */
-    const std::string m_sub_topic_name = "/local_plan";
+    const std::string m_sub_topic_name = "/plan";
     const std::string m_pathPub_topic_name = "/unicycle_path_follower/dcm_path";
     const std::string m_ritgh_footprints_topic_name = "/unicycle_path_follower/right_footprints";
     const std::string m_left_footprints_topic_name = "/unicycle_path_follower/left_footprints";
@@ -191,21 +191,36 @@ private:
             return false;
     }
 
-    bool setWaypoints(UnicyclePlanner& planner, double initTime, double endTime, const nav_msgs::msg::Path &path, const double freq=1){
-        
-        for (double i = initTime ; i < path.poses.size(); ++i)
+    bool setWaypoints(UnicyclePlanner& planner, double initTime, double endTime, const nav_msgs::msg::Path &path, const double speed){
+        //setting init pose to 0 0 0
+        planner.clearPersonFollowingDesiredTrajectory();
+        iDynTree::Vector2 initPose;
+        initPose(0) = - 0.1;
+        initPose(1) = .0;
+        planner.addPersonFollowingDesiredTrajectoryPoint(initTime, initPose);
+        //Skipping first pose
+        double elapsed_time = .0;
+        iDynTree::Vector2 desiredSpeed;
+        desiredSpeed(0) = speed;
+        desiredSpeed(1) = .0;
+        for (int i = 1 ; i < path.poses.size(); ++i)
         {
-            if (i*freq > endTime)   // exit condition
+            double distance = sqrt(pow(path.poses.at(i).pose.position.x - path.poses.at(i-1).pose.position.x, 2) - 
+                                   pow(path.poses.at(i).pose.position.y - path.poses.at(i-1).pose.position.y, 2));
+            double eta = distance / speed;
+            elapsed_time += eta + 0.1;  //add a pause for caution
+            if (elapsed_time > endTime)   // exit condition
             {
                 RCLCPP_INFO(this->get_logger(), "Exiting at No: %f", i);
                 break;
             }
-            //RCLCPP_INFO(this->get_logger(), "Setting waypont No: %f", i);
+            RCLCPP_INFO(this->get_logger(), "Setting waypont Time: %f ", elapsed_time);
             //do i need to transform each pose to the previous one? (shouldn't)
             iDynTree::Vector2 yDes;
-            yDes(0) = path.poses.at(i).pose.position.x+ 0.05;
+            yDes(0) = path.poses.at(i).pose.position.x;   //+ 0.05
             yDes(1) = path.poses.at(i).pose.position.y; 
-            planner.addPersonFollowingDesiredTrajectoryPoint(i * freq, yDes);   //scales each point
+
+            planner.addPersonFollowingDesiredTrajectoryPoint(elapsed_time, yDes, desiredSpeed);   //scales each point
         }
         return true;
     }
@@ -304,13 +319,12 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 }
      
     bool plannerTest(const nav_msgs::msg::Path &path){
-        //std::lock_guard<std::mutex> lock(m_mutex);
         Configuration conf;
         conf.initTime = 0.0;
-        conf.endTime = 50.0;    //50.0
+        conf.endTime = 200.0;    //50.0
         conf.dT = 0.01;
         conf.K = 10;
-        conf.dX = 0.05;
+        conf.dX = 0.1;  //0.05
         conf.dY = 0.0;
         conf.maxL = 0.2;
         conf.minL = 0.05;
@@ -358,20 +372,20 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
             converted_path.push_back(tmp_pose);
         } 
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
-        //iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path));
+        iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path, 0.01));
         std::cerr <<"Populating the trajectory took " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         std::shared_ptr<FootPrint> left, right;
         left = std::make_shared<FootPrint>();
         right = std::make_shared<FootPrint>();
-        iDynTree::Vector2 initPosition;
-        initPosition(0) = 0.1;      //0.3
-        initPosition(1) = 0.1;      //-0.5
+        //iDynTree::Vector2 initPosition;
+        //initPosition(0) = 0.1;      //0.3
+        //initPosition(1) = 0.1;      //-0.5
         //left->addStep(initPosition, iDynTree::deg2rad(0), 0); //fake initialization
 
         start = clock();
-        //iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
-        iDynTree::assertTrue(planner.computeNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
+        iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
+        //iDynTree::assertTrue(planner.computeNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
         std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         StepList leftSteps = left->getSteps();
