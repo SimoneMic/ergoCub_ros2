@@ -195,32 +195,40 @@ private:
         //setting init pose to 0 0 0
         planner.clearPersonFollowingDesiredTrajectory();
         iDynTree::Vector2 initPose;
-        initPose(0) = - 0.1;
-        initPose(1) = .0;
+        initPose(0) = 0.0;
+        initPose(1) = 0.0;
         planner.addPersonFollowingDesiredTrajectoryPoint(initTime, initPose);
-        //Skipping first pose
-        double elapsed_time = .0;
+        //Skipping first pose from path (replaced by previous zeroes)
+        double elapsed_time = 0.0;
         iDynTree::Vector2 desiredSpeed;
         desiredSpeed(0) = speed;
         desiredSpeed(1) = .0;
-        for (int i = 1 ; i < path.poses.size(); ++i)
+        for (size_t i = 1 ; i < path.poses.size(); ++i)
         {
-            double distance = sqrt(pow(path.poses.at(i).pose.position.x - path.poses.at(i-1).pose.position.x, 2) - 
+            std::cout << i << std::endl;
+            double distance = sqrt(pow(path.poses.at(i).pose.position.x - path.poses.at(i-1).pose.position.x, 2) + 
                                    pow(path.poses.at(i).pose.position.y - path.poses.at(i-1).pose.position.y, 2));
             double eta = distance / speed;
-            elapsed_time += eta + 0.1;  //add a pause for caution
+            elapsed_time += eta;  //add a pause for caution?
+            //check data
+            if (std::isnan(elapsed_time))
+            {
+                RCLCPP_ERROR(this->get_logger(), "Error - NaN time: %f with: i = %i pose(i) = (%f, %f) pose(i-1) = (%f, %f)", 
+                            elapsed_time, i, path.poses.at(i).pose.position.x, path.poses.at(i).pose.position.y, path.poses.at(i-1).pose.position.x, path.poses.at(i-1).pose.position.y);
+                return false;   
+            }
+            
             if (elapsed_time > endTime)   // exit condition
             {
                 RCLCPP_INFO(this->get_logger(), "Exiting at No: %f", i);
                 break;
             }
             RCLCPP_INFO(this->get_logger(), "Setting waypont Time: %f ", elapsed_time);
-            //do i need to transform each pose to the previous one? (shouldn't)
             iDynTree::Vector2 yDes;
-            yDes(0) = path.poses.at(i).pose.position.x;   //+ 0.05
+            yDes(0) = path.poses.at(i).pose.position.x;   //+ 0.05  should I add the person following distance?
             yDes(1) = path.poses.at(i).pose.position.y; 
 
-            planner.addPersonFollowingDesiredTrajectoryPoint(elapsed_time, yDes, desiredSpeed);   //scales each point
+            planner.addPersonFollowingDesiredTrajectoryPoint(elapsed_time, yDes, desiredSpeed);  
         }
         return true;
     }
@@ -321,24 +329,24 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
     bool plannerTest(const nav_msgs::msg::Path &path){
         Configuration conf;
         conf.initTime = 0.0;
-        conf.endTime = 200.0;    //50.0
+        conf.endTime = 100.0;    //50.0
         conf.dT = 0.01;
         conf.K = 10;
-        conf.dX = 0.1;  //0.05
+        conf.dX = 0.05;  
         conf.dY = 0.0;
-        conf.maxL = 0.2;
+        conf.maxL = 0.21;    //0.2
         conf.minL = 0.05;
-        conf.minW = 0.08;
-        conf.maxAngle = iDynTree::deg2rad(45);
-        conf.minAngle = iDynTree::deg2rad(5);
+        conf.minW = 0.12;      //0.08
+        conf.maxAngle = iDynTree::deg2rad(22);  //45
+        conf.minAngle = iDynTree::deg2rad(8);   //5
         conf.nominalW = 0.14;
-        conf.maxT = 10;
-        conf.minT = 3;
-        conf.nominalT = 4;
+        conf.maxT = 1.3;     //10     
+        conf.minT = 1.1;      //3
+        conf.nominalT = 1.2;  //4
         conf.timeWeight = 2.5;
         conf.positionWeight = 1;
         conf.swingLeft = true;
-        conf.slowWhenTurnGain = 0.5;
+        conf.slowWhenTurnGain = 5.0;    //0.5
 
         UnicyclePlanner planner;
 
@@ -371,17 +379,15 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
             tmp_pose.position(1) = path.poses[i].pose.position.y;
             converted_path.push_back(tmp_pose);
         } 
+        double approx_speed = std::sqrt(std::pow(conf.maxL, 2) - std::pow(conf.nominalW, 2)) / conf.minT * 0.9 * 0.8;   //from ComputeNewSteps in UnicyclePlanner.cpp
+        std::cerr <<"APPROX SPEED: " << approx_speed <<std::endl;
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
-        iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path, 0.01));
+        iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path, approx_speed));
         std::cerr <<"Populating the trajectory took " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         std::shared_ptr<FootPrint> left, right;
         left = std::make_shared<FootPrint>();
         right = std::make_shared<FootPrint>();
-        //iDynTree::Vector2 initPosition;
-        //initPosition(0) = 0.1;      //0.3
-        //initPosition(1) = 0.1;      //-0.5
-        //left->addStep(initPosition, iDynTree::deg2rad(0), 0); //fake initialization
 
         start = clock();
         iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
