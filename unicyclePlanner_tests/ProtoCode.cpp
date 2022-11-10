@@ -55,7 +55,6 @@ private:
 
     //msg
     nav_msgs::msg::Path::ConstPtr m_path_msg;
-
     
     //debug
     bool debug_once = false;
@@ -70,7 +69,7 @@ private:
                 RCLCPP_INFO(this->get_logger(), "Quitting callback");
                 return;
             }
-            debug_once = true;
+            //debug_once = true;
             m_path_msg = msg_in;
             // Each time a path is published I need to transform it to the robot frame
             geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
