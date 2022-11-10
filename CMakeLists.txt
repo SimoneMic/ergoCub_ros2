@@ -65,18 +65,6 @@ ament_target_dependencies(ProtoCode
   "nav2_util"
 )
 
-add_executable(managed_odom src/odometry_lifeCycle.cpp)
-ament_target_dependencies(managed_odom
-  "lifecycle_msgs"
-  "rclcpp_lifecycle"
-  "std_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "YARP"
-  "nav_msgs"
-  "rclcpp"
-)
-
 add_executable(odometry_standalone odometry_standalone/main.cpp odometry_standalone/src/odometry_standalone.cpp)
 ament_target_dependencies(odometry_standalone
   "std_msgs"
@@ -157,17 +145,6 @@ ament_target_dependencies(chest_projection
   "rclcpp"
 )
 
-add_executable(setpoint_converter src/setpoint_converter.cpp)
-ament_target_dependencies(setpoint_converter
-  "YARP"
-  "rclcpp"
-  "nav_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "tf2"
-  "nav2_util"
-)
-
 add_executable(velocity_setpoint_converter src/velocity_setpoint_converter.cpp)
 ament_target_dependencies(velocity_setpoint_converter
   "YARP"
@@ -177,6 +154,18 @@ ament_target_dependencies(velocity_setpoint_converter
 
 add_executable(piecewise_path_converter src/piecewise_path_converter.cpp)
 ament_target_dependencies(piecewise_path_converter
+  "YARP"
+  "rclcpp"
+  "nav_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
+  "nav2_util"
+  "nav_2d_msgs"
+)
+
+add_executable(walking_controller_talker src/walking_controller_talker.cpp)
+ament_target_dependencies(walking_controller_talker
   "YARP"
   "rclcpp"
   "nav_msgs"
@@ -250,7 +239,6 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS
-  managed_odom
   scan_filter
   scan_filter_compensated
   scan_filter_simple
@@ -258,12 +246,12 @@ install(TARGETS
   odometry_callback
   odom_GT
   chest_projection
-  setpoint_converter
   CoM_trajectory_publisher
   obstacle_script
   velocity_setpoint_converter
   piecewise_path_converter
   ProtoCode
+  walking_controller_talker
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
