@@ -38,7 +38,7 @@ private:
     /* Consts*/
     const double m_sensor_threshold = 100.0;
     const std::string m_outPortName = "/path_converter/path:o";
-    const std::string m_inPortName = "/navigation/goal:i";
+    const std::string m_inPortName = "/walking-coordinator/goal:i";
 
     /* Vars*/
     bool m_send_goal;   //flag set externally when a new path has been published
@@ -47,7 +47,7 @@ private:
     bool send_once = true;  //for debug - used to send only one path
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;   //shared tf buffer
     std::mutex m_mutex;
-    bool m_stop_cmd = false;    //flag for an external stop command
+    //bool m_stop_cmd = false;    //flag for an external stop command
 
     nav_msgs::msg::Path transformPlan(geometry_msgs::msg::TransformStamped & t_tf, bool t_prune = true)
     {
@@ -118,10 +118,10 @@ public:
         m_send_goal = val;
     }
 
-    void stop_status(bool val)
-    {
-        m_stop_cmd = val;
-    }
+    //void stop_status(bool val)
+    //{
+    //    m_stop_cmd = val;
+    //}
 
     //main loop executed for each port reading of the merged feet status
     bool read(yarp::os::ConnectionReader& t_connection) override
@@ -143,21 +143,21 @@ public:
                 {
                     if (m_initialized)
                     {
-                        if (m_stop_cmd)
-                        {
-                            std::cout << "STOPPING ..." << std::endl;                           
-                            std::cout << "Creating port buffer" << std::endl;
-                            //Convert Path to yarp vector
-                            auto& out = m_port.prepare();
-                            std::cout << "Clearing port buffer" << std::endl;
-                            out.clear();
-                            out.push_back(0.0);
-                            out.push_back(0.0);
-                            
-                            m_port.write();  //send data only once per double support
-                            
-                            return true;
-                        }
+                        //if (m_stop_cmd)
+                        //{
+                        //    std::cout << "STOPPING ..." << std::endl;                           
+                        //    std::cout << "Creating port buffer" << std::endl;
+                        //    //Convert Path to yarp vector
+                        //    auto& out = m_port.prepare();
+                        //    std::cout << "Clearing port buffer" << std::endl;
+                        //    out.clear();
+                        //    out.push_back(0.0);
+                        //    out.push_back(0.0);
+                        //    
+                        //    m_port.write();  //send data only once per double support
+                        //    
+                        //    return true;
+                        //}
 
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
@@ -217,12 +217,12 @@ class PathConverter : public rclcpp::Node
 private:
     const double zero_speed_threshold = 1e-03;
     const std::string m_topic_name = "/plan";  // topic for TEB: /local_plan - for DWB: /plan
-    const std::string m_vel_topic = "/cmd_vel";   
+    //const std::string m_vel_topic = "/cmd_vel";   
     yarp::os::Port m_feet_state_port;
     const std::string m_feet_state_port_name = "/setopint_converter/feet_state:i";
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_setpoint_sub;
     YarpFeetDataProcessor m_processor;
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_velocity_sub;
+    //rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_velocity_sub;
 
     std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer_in;
@@ -234,19 +234,19 @@ private:
         m_processor.set_permission(true);
     }
 
-    void vel_callback(const geometry_msgs::msg::Twist::ConstPtr & msg_in)
-    {
-        if ( std::abs(msg_in->linear.x) <= zero_speed_threshold && std::abs(msg_in->linear.y) <= zero_speed_threshold && std::abs(msg_in->angular.z) <= zero_speed_threshold)
-        {
-            m_processor.stop_status(true);
-            RCLCPP_INFO(this->get_logger(), "DETECTED STOP COMMAND");
-        }
-        else
-        {
-            m_processor.stop_status(false);
-        }
-        
-    }
+    //void vel_callback(const geometry_msgs::msg::Twist::ConstPtr & msg_in)
+    //{
+    //    if ( std::abs(msg_in->linear.x) <= zero_speed_threshold && std::abs(msg_in->linear.y) <= zero_speed_threshold && std::abs(msg_in->angular.z) <= zero_speed_threshold)
+    //    {
+    //        m_processor.stop_status(true);
+    //        RCLCPP_INFO(this->get_logger(), "DETECTED STOP COMMAND");
+    //    }
+    //    else
+    //    {
+    //        m_processor.stop_status(false);
+    //    }
+    //    
+    //}
 public:
     PathConverter() : rclcpp::Node("path_converter_node")
     {   
@@ -255,11 +255,11 @@ public:
             10,
             std::bind(&PathConverter::msg_callback, this, _1)
         );
-        m_velocity_sub = this->create_subscription<geometry_msgs::msg::Twist>(
-            m_vel_topic, 
-            10, 
-            std::bind(&PathConverter::vel_callback, this, _1)
-        );
+        //m_velocity_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+        //    m_vel_topic, 
+        //    10, 
+        //    std::bind(&PathConverter::vel_callback, this, _1)
+        //);
         // TFs
         m_tf_buffer_in = std::make_shared<tf2_ros::Buffer>(this->get_clock());    //share to the yarp port
         m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer_in);
