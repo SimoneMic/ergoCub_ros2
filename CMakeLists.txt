@@ -176,6 +176,19 @@ ament_target_dependencies(walking_controller_talker
   "nav_2d_msgs"
 )
 
+add_executable(footsteps_viewer src/footsteps_viewer.cpp)
+ament_target_dependencies(footsteps_viewer
+  "YARP"
+  "rclcpp"
+  "nav_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
+  "nav2_util"
+  "nav_2d_msgs"
+  "visualization_msgs"
+)
+
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
 ament_target_dependencies(CoM_trajectory_publisher
   "nav_msgs"
@@ -252,6 +265,7 @@ install(TARGETS
   piecewise_path_converter
   ProtoCode
   walking_controller_talker
+  footsteps_viewer
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory

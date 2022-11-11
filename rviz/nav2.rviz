@@ -721,19 +721,19 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /unicycle_path_follower/left_footprints
+        Value: /footstep_viewer_node/left_footprints
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /unicycle_path_follower/right_footprints
+        Value: /footstep_viewer_node/right_footprints
       Value: true
   Enabled: true
   Global Options:
@@ -773,25 +773,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 8.024431228637695
+      Distance: 17.3991641998291
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.1707388162612915
-        Y: -0.20918726921081543
-        Z: -0.16294121742248535
+        X: -0.3062626123428345
+        Y: -0.9150672554969788
+        Z: 0.07506395876407623
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8447969555854797
+      Pitch: 1.0497963428497314
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 0.5310571789741516
+      Yaw: 0.6010575890541077
     Saved: ~
 Window Geometry:
   Displays:
