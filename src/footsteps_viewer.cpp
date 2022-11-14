@@ -15,6 +15,8 @@
 #include "visualization_msgs/msg/marker_array.hpp"
 
 #include <mutex>
+#include <thread>
+#include <chrono>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -24,23 +26,28 @@ class FootstepsViewerRos : public rclcpp::Node
 {
 private:
 
-    std::shared_ptr<tf2_ros::TransformListener> m_tfListener{nullptr};
-    std::shared_ptr<tf2_ros::Buffer> m_tfBuffer;
+    //std::shared_ptr<tf2_ros::TransformListener> m_tfListener{nullptr};
+    //std::shared_ptr<tf2_ros::Buffer> m_tfBuffer;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_rightFootprintsMarkersPub;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_leftFootprintsMarkersPub;
     const std::string m_rightFootprintsTopicName = "/footstep_viewer_node/right_footprints";
     const std::string m_leftFootprintsTopicName = "/footstep_viewer_node/left_footprints";
+
+    std::mutex m_rosMutex;
     
 public:
     FootstepsViewerRos() : rclcpp::Node("footstep_viewer_node")
     {   
-        m_tfBuffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-        m_tfListener = std::make_shared<tf2_ros::TransformListener>(*m_tfBuffer);
+        //m_tfBuffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+        //m_tfListener = std::make_shared<tf2_ros::TransformListener>(*m_tfBuffer);
         m_rightFootprintsMarkersPub = this->create_publisher<visualization_msgs::msg::MarkerArray>(m_rightFootprintsTopicName, 10);
         m_leftFootprintsMarkersPub = this->create_publisher<visualization_msgs::msg::MarkerArray>(m_leftFootprintsTopicName, 10);
     }
 
     bool publishMarkers(yarp::os::Bottle data){
+        //std::lock_guard<std::mutex> guard(m_rosMutex);
+        std::cout << "publishMarkers" << std::endl;
+        std::cout << data.size() << std::endl;
         auto leftSteps = data.get(0).asList();
         auto rightSteps = data.get(1).asList();
         if (leftSteps->size() == 0 || rightSteps->size()==0)
@@ -54,11 +61,12 @@ public:
         visualization_msgs::msg::Marker tmp_marker_msg;
         builtin_interfaces::msg::Time timestamp = now();
         //LEFT
+        std::cout << "Left Loop" << std::endl;
         //RCLCPP_INFO(this->get_logger(), "Left Loop");
         for (size_t i = 0; i < leftSteps->size(); ++i)
         {
             visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+            tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
@@ -92,16 +100,18 @@ public:
             left_marker_array.markers.push_back(tmp_marker_msg);
         }
         //RCLCPP_INFO(this->get_logger(), "Publishing Left");
+        std::cout << "Left Publish" << std::endl;
         m_leftFootprintsMarkersPub->publish(left_marker_array);
 
         //RIGHT
+        std::cout << "Right Loop" << std::endl;
         //RCLCPP_INFO(this->get_logger(), "Right Loop");
 
         tmp_marker_msg.points.clear();
         for (size_t i = 0; i < rightSteps->size(); ++i)
         {
             visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+            tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
@@ -136,6 +146,7 @@ public:
         }
 
         //RCLCPP_INFO(this->get_logger(), "Publishing Right");
+        std::cout << "Right Publish" << std::endl;
         //publish
         m_rightFootprintsMarkersPub->publish(right_marker_array);
     }
@@ -147,26 +158,56 @@ class FootstepsViewerYarp : public yarp::os::PortReader
 private:
     std::mutex m_mutex;
     std::shared_ptr<FootstepsViewerRos> m_rosNode;
+    bool m_initialized = false;
 
 public:
-    FootstepsViewerYarp(std::shared_ptr<FootstepsViewerRos> t_rosNode)
-    {
-        m_rosNode = t_rosNode;
-    };
 
+    FootstepsViewerYarp()
+    {
+    };
     //main loop executed for each port reading of the merged feet status
     bool read(yarp::os::ConnectionReader& t_connection) override
     {
         std::lock_guard<std::mutex> guard(m_mutex);
+        if (!m_initialized)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        std::cout << "New message received" << std::endl;
         yarp::os::Bottle b;
         bool ok = b.read(t_connection);
         if (!ok) {
             std::cout << "No connection available for reading data " << std::endl;
             return false;
         }
-        m_rosNode->publishMarkers(b);
+        if (m_initialized)
+        {
+            try
+            {
+                m_rosNode->publishMarkers(b);
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+        else
+        {
+            std::cout << "ROS node not yet initialized" << std::endl;
+        }
+        
+        
         return true;
     }
+
+    void runROS()
+    {
+        m_rosNode = std::make_shared<FootstepsViewerRos>();
+        m_initialized = true;
+        rclcpp::spin(m_rosNode);
+    }
+
+
     
 };  //End of class FootstepsViewerYarp : public yarp::os::PortReader
 
@@ -180,13 +221,13 @@ int main(int argc, char** argv)
     // Start listening in polling
     if (rclcpp::ok())
     {
-        auto node = std::make_shared<FootstepsViewerRos>();
-        FootstepsViewerYarp dataProcessor(node);
+        FootstepsViewerYarp dataProcessor;
         yarp::os::Port footprintsPort;
         footprintsPort.open(footprintsPortName);
-        yarp::os::Network::connect("/walking-coordinatorfeet_positions:o", footprintsPortName);
+        yarp::os::Network::connect("/walking-coordinator/feet_positions:o", footprintsPortName);
         footprintsPort.setReader(dataProcessor);
-        rclcpp::spin(node);
+        dataProcessor.runROS();
+        //rclcpp::spin(node);
     }
     std::cout << "Shutting down" << std::endl;
     rclcpp::shutdown();
