@@ -22,7 +22,7 @@ private:
     /* const */
     const std::string m_reader_port_name = "/chest_projector/wrench_reader:i";
     const std::string m_writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
-    const double m_loopFreq = 100.0;
+    const double m_loopFreq = 200.0;
     const std::string m_chest_link = "chest";
     const double m_sensor_treshold = 100.0;
     /* msgs */

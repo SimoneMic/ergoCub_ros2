@@ -55,7 +55,7 @@ private:
 
         // Transform the global plan into the robot's frame of reference.
         nav_msgs::msg::Path transformed_plan_ = *m_untransformed_path;
-        transformed_plan_.header.frame_id = "virtual_unicycle_base";   //projection
+        transformed_plan_.header.frame_id = "odom";   //virtual_unicycle_base
         transformed_plan_.header.stamp = m_untransformed_path->header.stamp;
 
         //Transform the whole path
@@ -66,8 +66,8 @@ private:
             std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
         }
         // Remove the portion of the global plan that we've already passed so we don't -> i.e the one with negative X
-        // process it on the next iteration.
-        if (t_prune)
+        // process it on the next iteration. (can't be done in odom frame)
+        if (t_prune && transformed_plan_.header.frame_id != "odom")
         {
             // Helper predicate lambda function to see what is the positive x-element in a vector of poses
             // Warning: The robot needs to have a portion of the path that goes forward (positive X)
@@ -137,7 +137,7 @@ public:
                     {
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
-                        nav_msgs::msg::Path transformed_plan = transformPlan(TF, true);
+                        nav_msgs::msg::Path transformed_plan = transformPlan(TF, false);
                         if (transformed_plan.poses.size()>0)
                         {
                             std::cout << "Creating port buffer" << std::endl;
