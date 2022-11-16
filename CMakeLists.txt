@@ -189,6 +189,15 @@ ament_target_dependencies(footsteps_viewer
   "visualization_msgs"
 )
 
+add_executable(virtual_unicycle_publisher src/virtual_unicycle_publisher.cpp)
+ament_target_dependencies(virtual_unicycle_publisher
+  "YARP"
+  "rclcpp"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
+)
+
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
 ament_target_dependencies(CoM_trajectory_publisher
   "nav_msgs"
@@ -266,6 +275,7 @@ install(TARGETS
   ProtoCode
   walking_controller_talker
   footsteps_viewer
+  virtual_unicycle_publisher
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory

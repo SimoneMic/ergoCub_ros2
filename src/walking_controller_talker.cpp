@@ -55,7 +55,7 @@ private:
 
         // Transform the global plan into the robot's frame of reference.
         nav_msgs::msg::Path transformed_plan_ = *m_untransformed_path;
-        transformed_plan_.header.frame_id = "odom";   //virtual_unicycle_base
+        transformed_plan_.header.frame_id = "virtual_unicycle_base";   //virtual_unicycle_base
         transformed_plan_.header.stamp = m_untransformed_path->header.stamp;
 
         //Transform the whole path
@@ -137,7 +137,7 @@ public:
                     {
                         geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform("projection", m_untransformed_path->header.frame_id, rclcpp::Time(0), 50ms);
                         TF.transform.translation.x += 0.1;  //offsetted reference point used by the walking-controller -> found in config file by person distance
-                        nav_msgs::msg::Path transformed_plan = transformPlan(TF, false);
+                        nav_msgs::msg::Path transformed_plan = transformPlan(TF, true);
                         if (transformed_plan.poses.size()>0)
                         {
                             std::cout << "Creating port buffer" << std::endl;
