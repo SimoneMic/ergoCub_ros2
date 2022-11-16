@@ -66,7 +66,7 @@ public:
         for (size_t i = 0; i < leftSteps->size(); ++i)
         {
             visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+            tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
@@ -111,7 +111,7 @@ public:
         for (size_t i = 0; i < rightSteps->size(); ++i)
         {
             visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+            tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
