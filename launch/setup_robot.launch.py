@@ -54,6 +54,6 @@ def generate_launch_description():
         projection_node,
         rviz_node,
         scan_filtering_compensated,
-        odom_node,
+        #odom_node,
         depth_to_pointcloud
     ])

@@ -21,7 +21,7 @@ class ChestProjection : public rclcpp::Node
 private:
     /* const */
     const std::string m_reader_port_name = "/chest_projector/wrench_reader:i";
-    const std::string m_writer_port_name = "/base-estimator/contacts/stateAndNormalForce:o";
+    const std::string m_writer_port_name = "/feetWrenches";
     const double m_loopFreq = 200.0;
     const std::string m_chest_link = "chest";
     const double m_sensor_treshold = 100.0;
@@ -54,6 +54,14 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
 {
     m_wrench_reader_port.open(m_reader_port_name);
     yarp::os::Network::connect(m_writer_port_name, m_reader_port_name);
+    if(yarp::os::Network::isConnected(m_writer_port_name, m_reader_port_name))
+    {
+        RCLCPP_INFO(this->get_logger(), "YARP Ports connected successfully");
+    } 
+    else 
+    {
+        RCLCPP_ERROR(this->get_logger(), "[YARP] /feetWrenches NOT PRESENT:\n execute the merge command on the feet wrenches:\n yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches");
+    }
 
     m_foot_link = "r_sole";
     m_projection_TF.child_frame_id = "projection";
@@ -77,7 +85,7 @@ void ChestProjection::timer_callback()
     yarp::os::Bottle in_bottle;
     m_wrench_reader_port.read(in_bottle);
     //Determine which feet is in contact
-    if (in_bottle.get(0).asFloat64() > m_sensor_treshold && in_bottle.get(1).asFloat64() < m_sensor_treshold)
+    if (in_bottle.get(2).asFloat64() > m_sensor_treshold && in_bottle.get(8).asFloat64() < m_sensor_treshold)
     {
         m_foot_link = "l_sole";   //r_sole
         m_projection_TF.header.frame_id = m_foot_link;
@@ -86,7 +94,7 @@ void ChestProjection::timer_callback()
 
         //RCLCPP_INFO(this->get_logger(), "Switching to: %s \n", foot_link);
     }
-    else if (in_bottle.get(1).asFloat64() > m_sensor_treshold && in_bottle.get(0).asFloat64() < m_sensor_treshold)
+    else if (in_bottle.get(8).asFloat64() > m_sensor_treshold && in_bottle.get(2).asFloat64() < m_sensor_treshold)
     {
         m_foot_link = "r_sole";   //l_sole
         m_projection_TF.header.frame_id = m_foot_link;
