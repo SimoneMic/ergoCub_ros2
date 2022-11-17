@@ -44,7 +44,7 @@ public:
         m_leftFootprintsMarkersPub = this->create_publisher<visualization_msgs::msg::MarkerArray>(m_leftFootprintsTopicName, 10);
     }
 
-    bool publishMarkers(yarp::os::Bottle data){
+    bool publishMarkers(const yarp::os::Bottle& data){
         //std::lock_guard<std::mutex> guard(m_rosMutex);
         std::cout << "publishMarkers" << std::endl;
         std::cout << data.size() << std::endl;
@@ -58,7 +58,7 @@ public:
         
         visualization_msgs::msg::MarkerArray right_marker_array;
         visualization_msgs::msg::MarkerArray left_marker_array;
-        visualization_msgs::msg::Marker tmp_marker_msg;
+        // visualization_msgs::msg::Marker tmp_marker_msg;
         builtin_interfaces::msg::Time timestamp = now();
         //LEFT
         std::cout << "Left Loop" << std::endl;
@@ -107,7 +107,7 @@ public:
         std::cout << "Right Loop" << std::endl;
         //RCLCPP_INFO(this->get_logger(), "Right Loop");
 
-        tmp_marker_msg.points.clear();
+        //tmp_marker_msg.points.clear();
         for (size_t i = 0; i < rightSteps->size(); ++i)
         {
             visualization_msgs::msg::Marker tmp_marker_msg;
@@ -149,6 +149,9 @@ public:
         std::cout << "Right Publish" << std::endl;
         //publish
         m_rightFootprintsMarkersPub->publish(right_marker_array);
+        std::cout << "Exiting" << std::endl;
+
+
     }
 };  //End of class FootstepsViewerRos
 

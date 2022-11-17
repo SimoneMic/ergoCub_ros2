@@ -25,6 +25,7 @@ private:
     const double m_loopFreq = 200.0;
     const std::string m_chest_link = "chest";
     const double m_sensor_treshold = 100.0;
+    bool m_ok = false;
     /* msgs */
     geometry_msgs::msg::TransformStamped m_TF;
     geometry_msgs::msg::TransformStamped m_projection_TF;
@@ -57,10 +58,12 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
     if(yarp::os::Network::isConnected(m_writer_port_name, m_reader_port_name))
     {
         RCLCPP_INFO(this->get_logger(), "YARP Ports connected successfully");
+        m_ok = true;
     } 
     else 
     {
         RCLCPP_ERROR(this->get_logger(), "[YARP] /feetWrenches NOT PRESENT:\n execute the merge command on the feet wrenches:\n yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches");
+        m_ok = false;
     }
 
     m_foot_link = "r_sole";
@@ -80,6 +83,10 @@ ChestProjection::ChestProjection() : rclcpp::Node("chest_projection_node")
 void ChestProjection::timer_callback()
 {
     std::lock_guard<std::mutex> guard(m_mutex);   //lock
+    if (!m_ok)
+    {
+        return;
+    }
     
     // Check which foot is on the ground based on the contact sensors
     yarp::os::Bottle in_bottle;

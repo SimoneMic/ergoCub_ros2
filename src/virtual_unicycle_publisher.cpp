@@ -55,41 +55,88 @@ public:
             std::cout << "Reading virtual_unicycle_reference: X: " <<  data.get(1).asList()->get(0).asFloat64() << " Y: " <<  data.get(1).asList()->get(1).asFloat64() <<
                          " Theta: " << data.get(1).asList()->get(2).asFloat64() << std::endl;
             std::cout << "Reading stance foot: " << data.get(2).asString() << std::endl;
+            std::cout << "Reading Transform: X: " <<  data.get(3).asList()->get(0).asFloat64() << " Y: " <<  data.get(3).asList()->get(1).asFloat64() <<
+                         " Z: " << data.get(3).asList()->get(2).asFloat64() << " x: " << data.get(3).asList()->get(3).asFloat64() <<
+                         " y: " << data.get(3).asList()->get(4).asFloat64() << " z: " << data.get(3).asList()->get(5).asFloat64() <<
+                          std::endl;
+            std::cout << "Time: " << now().seconds() << " " << now().nanoseconds() << std::endl;
             geometry_msgs::msg::TransformStamped tf, tfReference;
             tf.header.stamp = now();
             tfReference.header.stamp = tf.header.stamp;
+            //tf.child_frame_id = "virtual_unicycle_simulated";
+            //tfReference.child_frame_id = "virtual_unicycle_reference";
+            //tf.header.frame_id = "odom";
+            //tfReference.header.frame_id = "odom";
             if (data.get(2).asString() == "left")
             {
                 tf.header.frame_id = "l_sole";
                 tfReference.header.frame_id = "l_sole";
                 tf.child_frame_id = "virtual_unicycle_simulated";
                 tfReference.child_frame_id = "virtual_unicycle_reference";
+                tf.transform.translation.x = - 0.07;
             }
             else
             {
                 tf.header.frame_id = "r_sole";
                 tfReference.header.frame_id = "r_sole";
                 tf.child_frame_id = "virtual_unicycle_simulated"; 
-                tfReference.child_frame_id = "virtual_unicycle_reference";           
+                tfReference.child_frame_id = "virtual_unicycle_reference";   
+                tf.transform.translation.x = 0.07;        
             }
 
-            tf.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
-            tf.transform.translation.y = data.get(0).asList()->get(1).asFloat64();
-            tf.transform.translation.z = 0.0;
+            //Odom Computation
+            geometry_msgs::msg::TransformStamped odomTf;
+            odomTf.header.frame_id = "odom";
+            odomTf.child_frame_id = "root_link";
+            odomTf.header.stamp = tf.header.stamp;
+            odomTf.transform.translation.x = data.get(3).asList()->get(0).asFloat64();
+            odomTf.transform.translation.y = data.get(3).asList()->get(1).asFloat64();
+            odomTf.transform.translation.z = data.get(3).asList()->get(2).asFloat64();
+
+            tf2::Quaternion qOdom;
+            qOdom.setRPY(data.get(3).asList()->get(3).asFloat64(), data.get(3).asList()->get(4).asFloat64(), data.get(3).asList()->get(5).asFloat64());
+            odomTf.transform.rotation.x = qOdom.x();
+            odomTf.transform.rotation.y = qOdom.y();
+            odomTf.transform.rotation.z = qOdom.z();
+            odomTf.transform.rotation.w = qOdom.w();
+
+            m_tf_broadcaster->sendTransform(odomTf);
+
+            //Virtual unicycle base pub
+            //tf.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
+            //tf.transform.translation.y = data.get(0).asList()->get(1).asFloat64();
+            //tf.transform.translation.z = 0.0;
+
+            geometry_msgs::msg::TransformStamped footToRootTF;
+            if (data.get(2).asString() == "left")
+            {
+                footToRootTF = m_tf_buffer_in->lookupTransform("root_link", "l_sole", rclcpp::Time(0));
+            }
+            else
+            {
+                footToRootTF = m_tf_buffer_in->lookupTransform("root_link", "r_sole", rclcpp::Time(0));
+            }
+            //Conversion for extracting only YAW
+            tf2::Quaternion tfGround;    //quat of the root_link to chest frame tf
+            tf2::fromMsg(footToRootTF.transform.rotation, tfGround);
+            //Conversion from quat to rpy -> possible computational errors due to matricies
+            tf2::Matrix3x3 m(tfGround);
+            double roll, pitch, yaw;
+            m.getRPY(roll, pitch, yaw);
 
             tf2::Quaternion q;
-            q.setRPY(0,0, data.get(0).asList()->get(2).asFloat64());
+            q.setRPY(0, 0, yaw);
             tf.transform.rotation.x = q.x();
             tf.transform.rotation.y = q.y();
             tf.transform.rotation.z = q.z();
             tf.transform.rotation.w = q.w();
 
-            tfReference.transform.translation.x = data.get(1).asList()->get(0).asFloat64();
-            tfReference.transform.translation.y = data.get(1).asList()->get(1).asFloat64();
-            tfReference.transform.translation.z = 0.0;
+            //tfReference.transform.translation.x = data.get(1).asList()->get(0).asFloat64();
+            //tfReference.transform.translation.y = data.get(1).asList()->get(1).asFloat64();
+            //tfReference.transform.translation.z = 0.0;
 
             tf2::Quaternion qRef;
-            qRef.setRPY(0,0, data.get(1).asList()->get(2).asFloat64());
+            qRef.setRPY(0, 0, yaw);
             tfReference.transform.rotation.x = qRef.x();
             tfReference.transform.rotation.y = qRef.y();
             tfReference.transform.rotation.z = qRef.z();
@@ -98,6 +145,7 @@ public:
 
             m_tf_broadcaster->sendTransform(tf);
             m_tf_broadcaster->sendTransform(tfReference);
+
             std::cout << "Exit publish" << std::endl;
         }
         catch(const std::exception& e)
