@@ -4,7 +4,9 @@ bt_navigator:
     global_frame: map
     robot_base_frame: virtual_unicycle_base #projection   #base_link
     odom_topic: /estimated_odom
-    #default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
+    default_bt_xml_filename: "navigate_w_replanning_only_if_goal_is_updated.xml"
+    default_nav_to_pose_bt_xml: "navigate_w_replanning_only_if_goal_is_updated.xml"
+    default_nav_through_poses_bt_xml: "navigate_w_replanning_only_if_goal_is_updated.xml"
     bt_loop_duration: 10
     default_server_timeout: 40
     enable_groot_monitoring: True
@@ -230,10 +232,10 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    planner_plugins: ['GridBased']
+    planner_plugins: ['FollowPath']
     use_sim_time: True
     expected_planner_frequency: 10.0   #20.0
-    GridBased:
+    FollowPath:
       plugin: "nav2_smac_planner/SmacPlannerHybrid"
       tolerance: 0.5                      # tolerance for planning if unable to reach exact pose, in meters, for 2D node
       downsample_costmap: false           # whether or not to downsample the map
@@ -247,8 +249,8 @@ planner_server:
       angle_quantization_bins: 64         # For Hybrid nodes: Number of angle bins for search, must be 1 for 2D node (no angle search)
       analytic_expansion_ratio: 3.5       # For Hybrid/Lattice nodes: The ratio to attempt analytic expansions during search for final approach.
       analytic_expansion_max_length: 3.0    # For Hybrid/Lattice nodes: The maximum length of the analytic expansion to be considered valid to prevent unsafe shortcutting (in meters). This should be scaled with minimum turning radius and be no less than 4-5x the minimum radius
-      minimum_turning_radius: 0.30        # 0.4 For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
-      reverse_penalty: 2.1                # For Reeds-Shepp model: penalty to apply if motion is reversing, must be => 1
+      minimum_turning_radius: 0.20        # 0.4 For Hybrid/Lattice nodes: minimum turning radius in m of path / vehicle
+      reverse_penalty: 1.1                # For Reeds-Shepp model: penalty to apply if motion is reversing, must be => 1
       change_penalty: 0.0                 # For Hybrid nodes: penalty to apply if motion is changing directions, must be >= 0
       non_straight_penalty: 1.20          # 1.2 For Hybrid nodes: penalty to apply if motion is non-straight, must be => 1
       cost_penalty: 2.0                   # For Hybrid nodes: penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
@@ -288,15 +290,15 @@ behavior_server:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
-    spin:
-      plugin: "nav2_behaviors/Spin"
-    backup:
-      plugin: "nav2_behaviors/BackUp"
+    behavior_plugins: ["drive_on_heading",]
+    #spin:
+    #  plugin: "nav2_behaviors/Spin"
+    #backup:
+    #  plugin: "nav2_behaviors/BackUp"
     drive_on_heading:
       plugin: "nav2_behaviors/DriveOnHeading"
-    wait:
-      plugin: "nav2_behaviors/Wait"
+    #wait:
+    #  plugin: "nav2_behaviors/Wait"
     global_frame: odom
     robot_base_frame: virtual_unicycle_base #base_link
     transform_tolerance: 0.2  #0.1
