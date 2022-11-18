@@ -63,17 +63,21 @@ public:
             geometry_msgs::msg::TransformStamped tf, tfReference;
             tf.header.stamp = now();
             tfReference.header.stamp = tf.header.stamp;
-            //tf.child_frame_id = "virtual_unicycle_simulated";
-            //tfReference.child_frame_id = "virtual_unicycle_reference";
-            //tf.header.frame_id = "odom";
-            //tfReference.header.frame_id = "odom";
+            geometry_msgs::msg::TransformStamped tf_fromOdom, tfReference_fromOdom; //position of the virtual unicycle computed from the walking-controller in the odom frame
+            tf_fromOdom.header.stamp = tfReference_fromOdom.header.stamp = tf.header.stamp;
+            tf_fromOdom.child_frame_id = "odom_virtual_unicycle_simulated";
+            tfReference_fromOdom.child_frame_id = "odom_virtual_unicycle_reference";
+            tf_fromOdom.header.frame_id = "odom";
+            tfReference_fromOdom.header.frame_id = "odom";
+
+
             if (data.get(2).asString() == "left")
             {
                 tf.header.frame_id = "l_sole";
                 tfReference.header.frame_id = "l_sole";
                 tf.child_frame_id = "virtual_unicycle_simulated";
                 tfReference.child_frame_id = "virtual_unicycle_reference";
-                tf.transform.translation.x = - 0.07;
+                tf.transform.translation.y = - 0.07;
             }
             else
             {
@@ -81,9 +85,14 @@ public:
                 tfReference.header.frame_id = "r_sole";
                 tf.child_frame_id = "virtual_unicycle_simulated"; 
                 tfReference.child_frame_id = "virtual_unicycle_reference";   
-                tf.transform.translation.x = 0.07;        
+                tf.transform.translation.y = 0.07;        
             }
 
+            tf.transform.translation.x = 0;
+            tf.transform.translation.z = 0;
+            tfReference.transform.translation.x = tf.transform.translation.x + 0.1;
+            tfReference.transform.translation.y = tf.transform.translation.y;
+            tfReference.transform.translation.z = 0.0;
             //Odom Computation
             geometry_msgs::msg::TransformStamped odomTf;
             odomTf.header.frame_id = "odom";
@@ -102,10 +111,22 @@ public:
 
             m_tf_broadcaster->sendTransform(odomTf);
 
-            //Virtual unicycle base pub
-            //tf.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
-            //tf.transform.translation.y = data.get(0).asList()->get(1).asFloat64();
-            //tf.transform.translation.z = 0.0;
+            //Virtual unicycle base pub in odom frame
+            tf_fromOdom.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
+            tf_fromOdom.transform.translation.y = data.get(0).asList()->get(1).asFloat64();
+            tf_fromOdom.transform.translation.z = 0.0;
+
+            tfReference_fromOdom.transform.translation.x = data.get(1).asList()->get(0).asFloat64();
+            tfReference_fromOdom.transform.translation.y = data.get(1).asList()->get(1).asFloat64();
+            tfReference_fromOdom.transform.translation.z = 0.0;
+
+            tf2::Quaternion qVirtualUnicycleInOdomFrame;
+            qVirtualUnicycleInOdomFrame.setRPY(0, 0, data.get(0).asList()->get(2).asFloat64());
+            tf_fromOdom.transform.rotation.x = qVirtualUnicycleInOdomFrame.x();
+            tf_fromOdom.transform.rotation.y = qVirtualUnicycleInOdomFrame.y();
+            tf_fromOdom.transform.rotation.z = qVirtualUnicycleInOdomFrame.z();
+            tf_fromOdom.transform.rotation.w = qVirtualUnicycleInOdomFrame.w();
+            tfReference_fromOdom.transform.rotation = tf_fromOdom.transform.rotation;
 
             geometry_msgs::msg::TransformStamped footToRootTF;
             if (data.get(2).asString() == "left")
@@ -131,10 +152,6 @@ public:
             tf.transform.rotation.z = q.z();
             tf.transform.rotation.w = q.w();
 
-            //tfReference.transform.translation.x = data.get(1).asList()->get(0).asFloat64();
-            //tfReference.transform.translation.y = data.get(1).asList()->get(1).asFloat64();
-            //tfReference.transform.translation.z = 0.0;
-
             tf2::Quaternion qRef;
             qRef.setRPY(0, 0, yaw);
             tfReference.transform.rotation.x = qRef.x();
@@ -145,6 +162,8 @@ public:
 
             m_tf_broadcaster->sendTransform(tf);
             m_tf_broadcaster->sendTransform(tfReference);
+            m_tf_broadcaster->sendTransform(tf_fromOdom);
+            m_tf_broadcaster->sendTransform(tfReference_fromOdom);
 
             std::cout << "Exit publish" << std::endl;
         }
