@@ -11,6 +11,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include "tf2_ros/buffer.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "geometry_msgs/msg/point_stamped.hpp"
 
 #include <mutex>
 #include <thread>
@@ -49,16 +51,16 @@ public:
         {
             yarp::os::Bottle data;
             port.read(data);
-            std::cout << "publish" << std::endl;
-            std::cout << "Reading virtual_unicycle_simulated: X: " <<  data.get(0).asList()->get(0).asFloat64() << " Y: " <<  data.get(0).asList()->get(1).asFloat64() <<
-                         " Theta: " << data.get(0).asList()->get(2).asFloat64() << std::endl;
-            std::cout << "Reading virtual_unicycle_reference: X: " <<  data.get(1).asList()->get(0).asFloat64() << " Y: " <<  data.get(1).asList()->get(1).asFloat64() <<
-                         " Theta: " << data.get(1).asList()->get(2).asFloat64() << std::endl;
-            std::cout << "Reading stance foot: " << data.get(2).asString() << std::endl;
-            std::cout << "Reading Transform: X: " <<  data.get(3).asList()->get(0).asFloat64() << " Y: " <<  data.get(3).asList()->get(1).asFloat64() <<
-                         " Z: " << data.get(3).asList()->get(2).asFloat64() << " x: " << data.get(3).asList()->get(3).asFloat64() <<
-                         " y: " << data.get(3).asList()->get(4).asFloat64() << " z: " << data.get(3).asList()->get(5).asFloat64() <<
-                          std::endl;
+            //std::cout << "publish" << std::endl;
+            //std::cout << "Reading virtual_unicycle_simulated: X: " <<  data.get(0).asList()->get(0).asFloat64() << " Y: " <<  data.get(0).asList()->get(1).asFloat64() <<
+            //             " Theta: " << data.get(0).asList()->get(2).asFloat64() << std::endl;
+            //std::cout << "Reading virtual_unicycle_reference: X: " <<  data.get(1).asList()->get(0).asFloat64() << " Y: " <<  data.get(1).asList()->get(1).asFloat64() <<
+            //             " Theta: " << data.get(1).asList()->get(2).asFloat64() << std::endl;
+            //std::cout << "Reading stance foot: " << data.get(2).asString() << std::endl;
+            //std::cout << "Reading Transform: X: " <<  data.get(3).asList()->get(0).asFloat64() << " Y: " <<  data.get(3).asList()->get(1).asFloat64() <<
+            //             " Z: " << data.get(3).asList()->get(2).asFloat64() << " x: " << data.get(3).asList()->get(3).asFloat64() <<
+            //             " y: " << data.get(3).asList()->get(4).asFloat64() << " z: " << data.get(3).asList()->get(5).asFloat64() <<
+            //              std::endl;
             std::cout << "Time: " << now().seconds() << " " << now().nanoseconds() << std::endl;
             geometry_msgs::msg::TransformStamped tf, tfReference;
             tf.header.stamp = now();
@@ -165,6 +167,79 @@ public:
             m_tf_broadcaster->sendTransform(tf_fromOdom);
             m_tf_broadcaster->sendTransform(tfReference_fromOdom);
 
+            //Geometrical virtual unicycle approach
+            geometry_msgs::msg::TransformStamped geometrycalVirtualUnicycle;    //tf to broadcast
+            geometry_msgs::msg::TransformStamped stanceFootToSwingFoot_tf;
+            std::string stanceFoot, swingFoot;
+            geometrycalVirtualUnicycle.header.stamp = tf.header.stamp;
+            geometrycalVirtualUnicycle.child_frame_id = "geometric_unicycle";
+            //The unicycle pose and orientation will follow the swing foot ones ONLY if it has surpassed the stance foot (in the X direction)
+            if (data.get(2).asString() == "left")
+            {
+                stanceFoot = "l_sole";
+                swingFoot = "r_sole";
+            }
+            else
+            {
+                stanceFoot = "r_sole";
+                swingFoot = "l_sole"; 
+            }
+            geometrycalVirtualUnicycle.header.frame_id = stanceFoot;
+            stanceFootToSwingFoot_tf = m_tf_buffer_in->lookupTransform(swingFoot, stanceFoot, rclcpp::Time(0));
+            
+            //create a point in the swing foot frame center (0, 0, 0) and transform it in the stance foot frame
+            //if X-component is negative, it means that it's behind it
+            geometry_msgs::msg::PoseStamped swingFootCenter;
+            swingFootCenter.header.frame_id = swingFoot;
+            swingFootCenter.pose.position.x = .0;
+            swingFootCenter.pose.position.y = .0;
+            swingFootCenter.pose.position.z = .0;
+            swingFootCenter.pose.orientation.x = .0;
+            swingFootCenter.pose.orientation.y = .0;
+            swingFootCenter.pose.orientation.z = .0;
+            swingFootCenter.pose.orientation.w = 1;
+            swingFootCenter = m_tf_buffer_in->transform(swingFootCenter, stanceFoot);
+            //now let's check the relative position of the transformed point:
+            if (swingFootCenter.pose.position.x > 0)
+            {
+                //if positive I take the swing foot as valid unicycle
+                //let's take the yaw orientation of the swing foot
+                tf2::Quaternion conversionQuat;
+                tf2::fromMsg(stanceFootToSwingFoot_tf.transform.rotation, conversionQuat);
+                tf2::Matrix3x3 matrix(conversionQuat);
+                double r, p, y;
+                matrix.getRPY(r, p, y);
+                conversionQuat.setRPY(0.0, 0.0, - y);
+                geometrycalVirtualUnicycle.transform.rotation.x = conversionQuat.x();
+                geometrycalVirtualUnicycle.transform.rotation.y = conversionQuat.y();
+                geometrycalVirtualUnicycle.transform.rotation.z = conversionQuat.z();
+                geometrycalVirtualUnicycle.transform.rotation.w = conversionQuat.w();
+                //translation -> take the halfway point on x and y
+                geometrycalVirtualUnicycle.transform.translation.z = 0;
+                geometrycalVirtualUnicycle.transform.translation.x = -stanceFootToSwingFoot_tf.transform.translation.x;
+                geometrycalVirtualUnicycle.transform.translation.y = -stanceFootToSwingFoot_tf.transform.translation.y / 2;
+            }
+            else
+            {
+                //otherwise I keep the unicycle on the stance foot
+                if (stanceFoot == "l_sole")
+                {
+                    geometrycalVirtualUnicycle.transform.translation.y = -0.07; //depends by the nominalWidth/2 parameter in the walking-controller
+                }
+                else
+                {
+                    geometrycalVirtualUnicycle.transform.translation.y = 0.07;
+                }
+                geometrycalVirtualUnicycle.transform.translation.x = 0.0;
+                geometrycalVirtualUnicycle.transform.translation.z = 0.0;
+                geometrycalVirtualUnicycle.transform.rotation.x = 0;
+                geometrycalVirtualUnicycle.transform.rotation.y = 0;
+                geometrycalVirtualUnicycle.transform.rotation.z = 0;
+                geometrycalVirtualUnicycle.transform.rotation.w = 1;
+            }
+            std::cout << " Rotation: w " << geometrycalVirtualUnicycle.transform.rotation.w << std::endl;
+            m_tf_broadcaster->sendTransform(geometrycalVirtualUnicycle);         
+
             std::cout << "Exit publish" << std::endl;
         }
         catch(const std::exception& e)
@@ -173,43 +248,6 @@ public:
         }
     }
 };  //End of class VirtualUnicyclePub
-
-//Class used for YARP port callbacks. 
-//class YarpDataProcessor : public yarp::os::PortReader
-//{
-//private:
-//    /* data */
-//    
-//    std::mutex m_yarpMutex;
-//public:
-//    std::shared_ptr<VirtualUnicyclePub> m_ros;
-//
-//    YarpDataProcessor()
-//    {
-//        m_ros = std::make_shared<VirtualUnicyclePub>();
-//    };
-//
-//    bool read(yarp::os::ConnectionReader& t_connection) override
-//    {
-//        std::lock_guard<std::mutex> guard(m_yarpMutex);
-//        std::cout << "Got new message on port" << std::endl;
-//        yarp::os::Bottle b;
-//        bool ok = b.read(t_connection);
-//        if (!ok) {
-//            std::cout << "No connection available for reading data " << std::endl;
-//            return false;
-//        }
-//        try
-//        {
-//            m_ros->publish(b);
-//        }
-//        catch(const std::exception& e)
-//        {
-//            std::cerr << e.what() << '\n';
-//        }
-//        
-//    }
-//};  //End of class YarpDataProcessor
 
 int main(int argc, char** argv)
 {

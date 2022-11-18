@@ -30,6 +30,8 @@ find_package(nav2_util REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
+find_package(tf2_kdl REQUIRED)
+
 find_package(iDynTree 4.3.0 REQUIRED)
 find_package(UnicyclePlanner 0.5.2 REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -196,6 +198,7 @@ ament_target_dependencies(virtual_unicycle_publisher
   "tf2_ros"
   "tf2_msgs"
   "tf2"
+  "tf2_kdl"
 )
 
 add_executable(CoM_trajectory_publisher src/CoM_trajectory_publisher.cpp)
