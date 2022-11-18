@@ -62,6 +62,7 @@ public:
             //             " y: " << data.get(3).asList()->get(4).asFloat64() << " z: " << data.get(3).asList()->get(5).asFloat64() <<
             //              std::endl;
             std::cout << "Time: " << now().seconds() << " " << now().nanoseconds() << std::endl;
+            std::vector<geometry_msgs::msg::TransformStamped> tfBuffer;
             geometry_msgs::msg::TransformStamped tf, tfReference;
             tf.header.stamp = now();
             tfReference.header.stamp = tf.header.stamp;
@@ -110,8 +111,8 @@ public:
             odomTf.transform.rotation.y = qOdom.y();
             odomTf.transform.rotation.z = qOdom.z();
             odomTf.transform.rotation.w = qOdom.w();
-
-            m_tf_broadcaster->sendTransform(odomTf);
+            tfBuffer.push_back(odomTf);
+            //m_tf_broadcaster->sendTransform(odomTf);
 
             //Virtual unicycle base pub in odom frame
             tf_fromOdom.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
@@ -162,10 +163,14 @@ public:
             tfReference.transform.rotation.w = qRef.w();
             std::cout << "Publishing tf X: " <<  tf.transform.translation.x << " Y: " <<  tf.transform.translation.y << std::endl;
 
-            m_tf_broadcaster->sendTransform(tf);
-            m_tf_broadcaster->sendTransform(tfReference);
-            m_tf_broadcaster->sendTransform(tf_fromOdom);
-            m_tf_broadcaster->sendTransform(tfReference_fromOdom);
+            tfBuffer.push_back(tf);
+            tfBuffer.push_back(tfReference);
+            tfBuffer.push_back(tf_fromOdom);
+            tfBuffer.push_back(tfReference_fromOdom);
+            //m_tf_broadcaster->sendTransform(tf);
+            //m_tf_broadcaster->sendTransform(tfReference);
+            //m_tf_broadcaster->sendTransform(tf_fromOdom);
+            //m_tf_broadcaster->sendTransform(tfReference_fromOdom);
 
             //Geometrical virtual unicycle approach
             geometry_msgs::msg::TransformStamped geometrycalVirtualUnicycle;    //tf to broadcast
@@ -238,7 +243,8 @@ public:
                 geometrycalVirtualUnicycle.transform.rotation.w = 1;
             }
             std::cout << " Rotation: w " << geometrycalVirtualUnicycle.transform.rotation.w << std::endl;
-            m_tf_broadcaster->sendTransform(geometrycalVirtualUnicycle);         
+            tfBuffer.push_back(geometrycalVirtualUnicycle);
+            m_tf_broadcaster->sendTransform(tfBuffer);         
 
             std::cout << "Exit publish" << std::endl;
         }
