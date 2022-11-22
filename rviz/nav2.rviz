@@ -97,6 +97,8 @@ Visualization Manager:
           Value: true
         chest_imu_frame:
           Value: false
+        geometric_unicycle:
+          Value: true
         head:
           Value: false
         imu_frame:
@@ -148,6 +150,10 @@ Visualization Manager:
         neck_3:
           Value: false
         odom:
+          Value: true
+        odom_virtual_unicycle_reference:
+          Value: true
+        odom_virtual_unicycle_simulated:
           Value: true
         projection:
           Value: true
@@ -207,6 +213,10 @@ Visualization Manager:
       Tree:
         map:
           odom:
+            odom_virtual_unicycle_reference:
+              {}
+            odom_virtual_unicycle_simulated:
+              {}
             root_link:
               base_link:
                 {}
@@ -221,7 +231,12 @@ Visualization Manager:
                               {}
                             l_foot_rear:
                               l_sole:
-                                {}
+                                geometric_unicycle:
+                                  {}
+                                virtual_unicycle_reference:
+                                  {}
+                                virtual_unicycle_simulated:
+                                  {}
               r_hip_1:
                 r_hip_2:
                   r_hip_3:
@@ -271,10 +286,6 @@ Visualization Manager:
                                 r_wrist_1:
                                   r_hand:
                                     {}
-            virtual_unicycle_reference:
-              {}
-            virtual_unicycle_simulated:
-              {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -669,7 +680,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz_default_plugins/Path
       Color: 25; 255; 0
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.029999999329447746
       Head Length: 0.019999999552965164
       Length: 0.30000001192092896
@@ -691,8 +702,8 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /received_global_plan
-      Value: false
+        Value: /CoM_planned_trajectory_test_downsampled
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: Marker
@@ -723,7 +734,7 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -735,7 +746,7 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
