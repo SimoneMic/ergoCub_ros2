@@ -4,7 +4,11 @@ bt_navigator:
     global_frame: map
     robot_base_frame: virtual_unicycle_base #projection   #base_link
     odom_topic: /estimated_odom
-    default_bt_xml_filename: "navigate_w_replanning_only_if_goal_is_updated.xml" #"navigate_w_replanning_and_recovery.xml"
+    default_nav_to_pose_bt_xml: "/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xml" #"/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xml"
+    #bt_xml_filename: "nav2_bt_navigator/navigate_w_replanning_distance.xmll"
+    #default_bt_xml_filename: "/home/user1/nav2_ws/src/navigation2/nav2_bt_navigator/behavior_trees/navigate_w_replanning_distance.xml"
+    #nav_through_poses_bt_xml: "nav2_bt_navigator/navigate_w_replanning_distance.xml"
+    #bt_xml_filename: "pippo"
     bt_loop_duration: 10
     default_server_timeout: 40
     enable_groot_monitoring: True
@@ -58,6 +62,7 @@ bt_navigator:
     - nav2_spin_cancel_bt_node
     - nav2_back_up_cancel_bt_node
     - nav2_drive_on_heading_cancel_bt_node
+    - ergocub_nav2_nodes_core
 
 bt_navigator_rclcpp_node:
   ros__parameters:
