@@ -178,6 +178,18 @@ ament_target_dependencies(walking_controller_talker
   "nav_2d_msgs"
 )
 
+add_executable(async_walking_controller_talker src/async_walking_controller_talker.cpp)
+ament_target_dependencies(async_walking_controller_talker
+  "YARP"
+  "rclcpp"
+  "nav_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
+  "nav2_util"
+  "nav_2d_msgs"
+)
+
 add_executable(footsteps_viewer src/footsteps_viewer.cpp)
 ament_target_dependencies(footsteps_viewer
   "YARP"
@@ -279,6 +291,7 @@ install(TARGETS
   walking_controller_talker
   footsteps_viewer
   virtual_unicycle_publisher
+  async_walking_controller_talker
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
