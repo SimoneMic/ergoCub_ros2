@@ -8,7 +8,7 @@
 #include <memory>
 
 
-std::atomic<bool> state(false);
+std::atomic<bool> state = true;
 
 void is_on_double_support(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                           std::shared_ptr<std_srvs::srv::Trigger::Response>      response)
@@ -18,7 +18,7 @@ void is_on_double_support(const std::shared_ptr<std_srvs::srv::Trigger::Request>
     state = false;  //reset the variable each time is resetted
 }
 
-//Class used for YARP port callbacks. Monitors the feet contacts state.
+//Class used for YARP port callbacks.
 class YarpTriggerProcessor : public yarp::os::PortReader
 {
 private:
@@ -34,26 +34,28 @@ public:
     //main loop executed for each port reading of the merged feet status
     bool read(yarp::os::ConnectionReader& t_connection) override
     {
-        std::lock_guard<std::mutex> guard(m_mutex);
-        yarp::os::Bottle b;
-        bool ok = b.read(t_connection);
-        if (!ok) {
-            std::cout << "Bad Yarp connection " << std::endl;
-            return false;
-        }
-
         try
         {
+            //std::lock_guard<std::mutex> guard(m_mutex);
+            yarp::os::Bottle b;
+            bool ok = b.read(t_connection);
+            if (!ok) {
+                std::cout << "Bad Yarp connection " << std::endl;
+                return false;
+            }
+
+        
             state = b.get(0).asBool();
             if (state)
             {
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "[is_on_double_support_srv] Red a trigger on YARP port");
+                std::cout << "[is_on_double_support_srv] Red a trigger on YARP port" << std::endl;
             }
         }
         catch(const std::exception& e)
         {
-            std::cerr << e.what() << '\n';
+            std::cerr << e.what() << std::endl;
         }
+        return true;
     }
 };  //End of class YarpTriggerProcessor
 
