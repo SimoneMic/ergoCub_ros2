@@ -29,12 +29,13 @@ find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(visualization_msgs REQUIRED)
-
+find_package(std_srvs REQUIRED)
 find_package(tf2_kdl REQUIRED)
 
 find_package(iDynTree 4.3.0 REQUIRED)
 find_package(UnicyclePlanner 0.5.2 REQUIRED)
 find_package(Eigen3 REQUIRED)
+
 
 include_directories(/opt/ros/humble/include/tf2_geometry_msgs)
 include_directories(/opt/ros/humble/include/tf2)
@@ -226,6 +227,13 @@ ament_target_dependencies(obstacle_script
   "YARP"
 )
 
+add_executable(planner_trigger_server planner_trigger/planner_trigger_server.cpp)
+ament_target_dependencies(planner_trigger_server
+  "YARP"
+  "rclcpp"
+  "std_srvs"
+)
+
 set(dependencies
   rclcpp
   geometry_msgs
@@ -292,6 +300,7 @@ install(TARGETS
   footsteps_viewer
   virtual_unicycle_publisher
   async_walking_controller_talker
+  planner_trigger_server
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
