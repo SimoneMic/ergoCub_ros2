@@ -3,11 +3,12 @@ bt_navigator:
     use_sim_time: True
     global_frame: map
     robot_base_frame: virtual_unicycle_base #projection   #base_link
-    odom_topic: /estimated_odom
+    odom_topic: estimated_odom
     #default_bt_xml_filename: "/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xm" #"navigate_w_replanning_and_recovery.xml"
     default_nav_to_pose_bt_xml: "/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xml"
     bt_loop_duration: 10
-    default_server_timeout: 40
+    default_server_timeout: 4000
+    transform_tolerance: 0.3
     enable_groot_monitoring: True
     groot_zmq_publisher_port: 1666
     groot_zmq_server_port: 1667
@@ -66,26 +67,27 @@ controller_server:
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.0
     speed_limit_topic: /speed_limit
-    odom_topic: /estimated_odom   #/odometry
-    progress_checker_plugin: progress_checker
-    goal_checker_plugins:
-    - goal_checker
-    checker_plugins:  #new
-    - progress_checker
-    controller_plugins:
-    - FollowPath
+    odom_topic: "estimated_odom"   #/odometry
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugin: "goal_checker"
+    current_goal_checker: "goal_checker"  
+    #- goal_checker
+    #checker_plugins:  #new
+    #- progress_checker
+    controller_plugins: ["FollowPath"]
+    #- FollowPath
 
     # Progress checker parameters
     progress_checker:
       plugin: nav2_controller::SimpleProgressChecker
-      required_movement_radius: 0.5
-      movement_time_allowance: 20.0
+      required_movement_radius: 0.1
+      movement_time_allowance: 2000.0
 
     # Goal checker parameters
     goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
-      xy_goal_tolerance: 0.4
-      yaw_goal_tolerance: 0.5
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.9
       stateful: true
     
     # DWB parameters

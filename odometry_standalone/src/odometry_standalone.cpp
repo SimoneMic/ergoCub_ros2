@@ -139,7 +139,7 @@ bool Estimator_odom::compute_odom()
         {
             q_final.setRPY(roll, pitch, in_bottle.get(5).asFloat64() - m_initial_offset_yaw);  //get yaw only from estimator
         }
-        RCLCPP_INFO(this->get_logger(), "ESTIMATOR ROLL: %f PITCH: %f YAW: %f \n", in_bottle.get(3).asFloat64(), in_bottle.get(4).asFloat64(), in_bottle.get(5).asFloat64());
+        //RCLCPP_INFO(this->get_logger(), "ESTIMATOR ROLL: %f PITCH: %f YAW: %f \n", in_bottle.get(3).asFloat64(), in_bottle.get(4).asFloat64(), in_bottle.get(5).asFloat64());
 
         m_odom_tf.transform.rotation.x = q_final.x();
         m_odom_tf.transform.rotation.y = q_final.y();
@@ -152,7 +152,8 @@ bool Estimator_odom::compute_odom()
         m_odom_msg.pose.pose.position.y = m_odom_tf.transform.translation.y;
         m_odom_msg.pose.pose.position.z = m_odom_tf.transform.translation.z;
         m_odom_msg.twist.twist.linear.x = in_bottle.get(6).asFloat64();
-        m_odom_msg.twist.twist.linear.y = in_bottle.get(7).asFloat64();
+        //m_odom_msg.twist.twist.linear.y = in_bottle.get(7).asFloat64();
+        m_odom_msg.twist.twist.linear.y = 0;
         m_odom_msg.twist.twist.linear.z = in_bottle.get(8).asFloat64();
         m_odom_msg.twist.twist.angular.x = in_bottle.get(9).asFloat64();
         m_odom_msg.twist.twist.angular.y = in_bottle.get(10).asFloat64();
@@ -174,7 +175,7 @@ bool Estimator_odom::publish_odom()
     try
     {
         //std::cout << "sending TF \n";
-        m_tf_broadcaster->sendTransform(m_odom_tf);
+        //m_tf_broadcaster->sendTransform(m_odom_tf);
         //std::cout << "sending odom msg \n";
         m_odom_pub->publish(m_odom_msg);
         return true;
