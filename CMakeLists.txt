@@ -167,17 +167,17 @@ ament_target_dependencies(piecewise_path_converter
   "nav_2d_msgs"
 )
 
-add_executable(walking_controller_talker src/walking_controller_talker.cpp)
-ament_target_dependencies(walking_controller_talker
-  "YARP"
-  "rclcpp"
-  "nav_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "tf2"
-  "nav2_util"
-  "nav_2d_msgs"
-)
+#add_executable(walking_controller_talker src/walking_controller_talker.cpp)
+#ament_target_dependencies(walking_controller_talker
+#  "YARP"
+#  "rclcpp"
+#  "nav_msgs"
+#  "tf2_ros"
+#  "tf2_msgs"
+#  "tf2"
+#  "nav2_util"
+#  "nav_2d_msgs"
+#)
 
 add_executable(async_walking_controller_talker src/async_walking_controller_talker.cpp)
 ament_target_dependencies(async_walking_controller_talker
@@ -296,7 +296,7 @@ install(TARGETS
   velocity_setpoint_converter
   piecewise_path_converter
   ProtoCode
-  walking_controller_talker
+  #walking_controller_talker
   footsteps_viewer
   virtual_unicycle_publisher
   async_walking_controller_talker
