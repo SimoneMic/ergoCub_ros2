@@ -57,7 +57,7 @@ public:
         }
         return true;
     }
-};  //End of class YarpTriggerProcessor
+};  //End of class YarpTriggerProcessor 
 
 int main(int argc, char **argv)
 {
