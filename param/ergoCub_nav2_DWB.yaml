@@ -7,6 +7,7 @@ bt_navigator:
     #default_bt_xml_filename: "/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xm" #"navigate_w_replanning_and_recovery.xml"
     default_nav_to_pose_bt_xml: "/home/user1/ros2_workspace/src/ergoCub_ros2/behavior_trees/navigate_to_pose_w_replanning_and_recovery_decorator.xml" #"/home/user1/ros2_workspace/install/ergocub_nav2_nodes/share/ergocub_nav2_nodes/replan_on_bool.xml"
     bt_loop_duration: 10
+    goal_reached_tol: 0.25
     default_server_timeout: 4000
     transform_tolerance: 0.3
     enable_groot_monitoring: True
@@ -45,6 +46,7 @@ bt_navigator:
     - nav2_controller_selector_bt_node
     - nav2_goal_checker_selector_bt_node
     - ergocub_nav2_nodes_core
+    - is_goal_reached
 
 bt_navigator_rclcpp_node:
   ros__parameters:
