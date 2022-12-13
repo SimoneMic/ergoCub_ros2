@@ -11,14 +11,15 @@
       <RecoveryNode number_of_retries="20" name="NavigateRecovery">
         <PipelineSequence name="NavigateWithReplanning">
           <RateController hz="10.0">
-            <RecoveryNode number_of_retries="5" name="ComputePathToPose">
+            <RecoveryNode number_of_retries="2" name="ComputePathToPose">
               <DecoratorOnBool service_name="is_on_double_support_srv">
                 <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
               </DecoratorOnBool>
               <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
             </RecoveryNode>
           </RateController>
-          <RecoveryNode number_of_retries="5" name="FollowPath">
+          <IsPathValidConditionModded server_timeout="10" path="{path}" />
+          <RecoveryNode number_of_retries="3" name="FollowPath">
             <FollowPath path="{path}" controller_id="FollowPath"/>
             <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
           </RecoveryNode>
