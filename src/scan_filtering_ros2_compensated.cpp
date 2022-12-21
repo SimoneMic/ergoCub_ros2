@@ -42,7 +42,7 @@ private:
             scan_in->header.frame_id,
             m_referece_frame,
             tf2_ros::fromMsg(scan_in->header.stamp) + tf2::durationFromSec(scan_in->ranges.size() * scan_in->time_increment),
-            tf2::durationFromSec(0.1),  
+            tf2::durationFromSec(0.2),  
             & transform_error ))
         {
             // Converts the scans into cartesian space points
@@ -53,7 +53,7 @@ private:
             //transform cloud from lidar frame to virtual_unicycle_base
             try
             {
-                transformed_cloud = m_tf_buffer_in->transform(original_cloud, m_referece_frame, tf2::durationFromSec((0.1)));
+                transformed_cloud = m_tf_buffer_in->transform(original_cloud, m_referece_frame, tf2::durationFromSec((0.2)));
             }
             catch(const std::exception& e)
             {
@@ -75,6 +75,13 @@ private:
             pass.setFilterLimits(m_filter_z_low, m_filter_z_high);
             // Filtering
             pass.filter (*cloud_filtered1);
+            // FILTER 1B removing the back part of Lidar (simulating the support crane on the real robot)
+            pcl::PassThrough<pcl::PointXYZ> pass_back;       
+            pass_back.setInputCloud (cloud_filtered1);
+            pass_back.setFilterFieldName ("x");
+            pass_back.setFilterLimits(0.0, 25.0);
+            // Filtering
+            pass_back.filter (*cloud_filtered1);
             sensor_msgs::msg::PointCloud2 ros_cloud_debug;
             //pcl::toROSMsg(*cloud_filtered2, ros_cloud_debug);
             //m_debug_pub->publish(ros_cloud_debug);
