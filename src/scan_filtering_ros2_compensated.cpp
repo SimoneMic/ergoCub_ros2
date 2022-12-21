@@ -42,7 +42,7 @@ private:
             scan_in->header.frame_id,
             m_referece_frame,
             tf2_ros::fromMsg(scan_in->header.stamp) + tf2::durationFromSec(scan_in->ranges.size() * scan_in->time_increment),
-            tf2::durationFromSec(0.2),  
+            tf2::durationFromSec(0.1),  
             & transform_error ))
         {
             // Converts the scans into cartesian space points
@@ -53,7 +53,7 @@ private:
             //transform cloud from lidar frame to virtual_unicycle_base
             try
             {
-                transformed_cloud = m_tf_buffer_in->transform(original_cloud, m_referece_frame, tf2::durationFromSec((0.2)));
+                transformed_cloud = m_tf_buffer_in->transform(original_cloud, m_referece_frame, tf2::durationFromSec((0)));
             }
             catch(const std::exception& e)
             {

@@ -50,7 +50,7 @@ private:
             return;
         }
         int n = msg_in.size();
-        RCLCPP_INFO(this->get_logger(), "Planned CoM trajectory (%i):\n", n);
+        //RCLCPP_INFO(this->get_logger(), "Planned CoM trajectory (%i):\n", n);
         geometry_msgs::msg::PoseStamped pose_tmp;
         pose_tmp.header.stamp = now();
         pose_tmp.header.frame_id = "odom";
@@ -138,7 +138,7 @@ private:
             }
         }
 
-        RCLCPP_INFO(this->get_logger(), "Downsized CoM trajectory (%i) \n", downsampled_CoM_path.poses.size());
+        //RCLCPP_INFO(this->get_logger(), "Downsized CoM trajectory (%i) \n", downsampled_CoM_path.poses.size());
         m_pub_->publish(CoM_path);
         m_downsampled_pub_->publish(downsampled_CoM_path);
         m_left_pub_->publish(left_extremes);

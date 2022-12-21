@@ -64,7 +64,7 @@ private:
                 {
                     out.push_back(transformed_plan.poses.at(i).pose.position.x);
                     out.push_back(transformed_plan.poses.at(i).pose.position.y);
-                    std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                    //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
                 }
 
                 //std::cout << "Writing port buffer" << std::endl;
@@ -85,7 +85,7 @@ private:
             {
                 out.push_back(0.0);
                 out.push_back(0.0);
-                std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
             }
             //std::cout << "Writing port buffer" << std::endl;
             m_port.write();
@@ -107,7 +107,7 @@ private:
             {
                 out.push_back(0.0);
                 out.push_back(0.0);
-                std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
             }
             //std::cout << "Writing port buffer" << std::endl;
             m_port.write();
@@ -135,7 +135,7 @@ private:
         for (int i = 0; i < path->poses.size(); ++i)
         {
             tf2::doTransform(path->poses.at(i), transformed_plan_.poses.at(i), t_tf);
-            std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
+            //std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
         }
         // Remove the portion of the global plan that we've already passed so we don't -> i.e the one with negative X
         // process it on the next iteration. (can't be done in odom frame)
