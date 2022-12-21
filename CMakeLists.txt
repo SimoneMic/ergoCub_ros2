@@ -48,11 +48,6 @@ add_definitions(${PCL_DEFINITIONS})
 
 nav2_package()
 
-include_directories(
-  trajectory_controller/include
-)
-
-
 add_executable(ProtoCode unicyclePlanner_tests/ProtoCode.cpp)
 target_link_libraries(ProtoCode UnicyclePlanner ${iDynTree_LIBRARIES} 
                       )
@@ -245,31 +240,6 @@ set(dependencies
   tf2
 )
 
-add_library(ergoCub_trajectory_controller SHARED trajectory_controller/src/trajectory_controller.cpp)
-
-# prevent pluginlib from using boost
-target_compile_definitions(ergoCub_trajectory_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
-
-ament_target_dependencies(ergoCub_trajectory_controller ${dependencies})
-
-install(TARGETS ergoCub_trajectory_controller
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
-install(DIRECTORY trajectory_controller/include/
-  DESTINATION include/
-)
-
-
-ament_export_include_directories(trajectory_controller/include)
-ament_export_libraries(ergoCub_trajectory_controller)
-ament_export_dependencies(${dependencies})
-
-pluginlib_export_plugin_description_file(nav2_core ergoCub_controller_plugin.xml)
-
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -284,17 +254,17 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS
-  scan_filter
+  #scan_filter
   scan_filter_compensated
-  scan_filter_simple
+  #scan_filter_simple
   odometry_standalone
   odometry_callback
   odom_GT
   chest_projection
   CoM_trajectory_publisher
   obstacle_script
-  velocity_setpoint_converter
-  piecewise_path_converter
+  #velocity_setpoint_converter
+  #piecewise_path_converter
   ProtoCode
   #walking_controller_talker
   footsteps_viewer
