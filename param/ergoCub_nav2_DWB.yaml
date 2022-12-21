@@ -10,9 +10,9 @@ bt_navigator:
     goal_reached_tol: 0.25
     default_server_timeout: 4000
     transform_tolerance: 0.3
-    enable_groot_monitoring: True
-    groot_zmq_publisher_port: 1666
-    groot_zmq_server_port: 1667
+    #enable_groot_monitoring: True
+    #groot_zmq_publisher_port: 1666
+    #groot_zmq_server_port: 1667
     plugin_lib_names:
     - nav2_compute_path_to_pose_action_bt_node
     - nav2_compute_path_through_poses_action_bt_node
@@ -47,6 +47,10 @@ bt_navigator:
     - nav2_goal_checker_selector_bt_node
     - ergocub_nav2_nodes_core
     - is_goal_reached
+    - is_path_valid
+    #error_code_names:
+    #- compute_path_error_code
+    #- follow_path_error_code
 
 bt_navigator_rclcpp_node:
   ros__parameters:
@@ -317,7 +321,7 @@ local_costmap:
         pointcloud_mark:  # no frame set, uses frame from message
           topic: /camera_rgbd/depth/points
           max_obstacle_height: 2.0
-          min_obstacle_height: 0.05
+          min_obstacle_height: 0.15
           obstacle_max_range: 5.0
           obstacle_min_range: 0.4
           raytrace_max_range: 6.0
@@ -393,7 +397,7 @@ global_costmap:
         pointcloud_mark:  # no frame set, uses frame from message
           topic: /camera_rgbd/depth/points
           max_obstacle_height: 2.0
-          min_obstacle_height: 0.05
+          min_obstacle_height: 0.15
           obstacle_max_range: 5.0
           obstacle_min_range: 0.4
           raytrace_max_range: 6.0
