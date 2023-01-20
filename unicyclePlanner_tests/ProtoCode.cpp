@@ -5,10 +5,10 @@
  *
  */
 
-#include "UnicyclePlanner.h"
+#include "/home/user1/robotology-superbuild/build/install/include/UnicyclePlanner.h"
 #include <iDynTree/Core/TestUtils.h>
 #include <iDynTree/Core/Utils.h>
-#include <Eigen/Core>
+#include </usr/include/eigen3/Eigen/Core>
 #include "iDynTree/Core/EigenHelpers.h"
 #include "iDynTree/Core/MatrixDynSize.h"
 #include <cmath>
@@ -72,6 +72,7 @@ private:
             //debug_once = true;
             m_path_msg = msg_in;
             // Each time a path is published I need to transform it to the robot frame
+            std::cout << "msg_in->header.frame_id: " << msg_in->header.frame_id << std::endl;
             geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
             nav_msgs::msg::Path transformed_path = transformPlan(tf, m_path_msg, false);
 
@@ -101,7 +102,13 @@ private:
         for (int i = 0; i < untransformed_path->poses.size(); ++i)
         {
             tf2::doTransform(m_path_msg->poses.at(i), transformed_plan_.poses.at(i), tf_);
-            std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
+            tf2::Quaternion tmp_quat;
+            tf2::fromMsg(transformed_plan_.poses.at(i).pose.orientation, tmp_quat);
+            double roll, pitch, yaw;
+            tf2::Matrix3x3 m(tmp_quat);
+            m.getRPY(roll, pitch, yaw);
+            std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "  Y: " << transformed_plan_.poses.at(i).pose.position.y <<
+            " Theta: " << yaw <<std::endl;
         }
         
         // Remove the portion of the global plan that is behind the robot
@@ -328,7 +335,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
     bool plannerTest(const nav_msgs::msg::Path &path){
         Configuration conf;
         conf.initTime = 0.0;
-        conf.endTime = 100.0;    //50.0
+        conf.endTime = 50.0;    //50.0
         conf.dT = 0.01;
         conf.K = 10;
         conf.dX = 0.05;  
@@ -362,6 +369,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         iDynTree::assertTrue(planner.setMinimumAngleForNewSteps(conf.minAngle));
         iDynTree::assertTrue(planner.setMinimumStepLength(conf.minL));
         iDynTree::assertTrue(planner.setSlowWhenTurnGain(conf.slowWhenTurnGain));
+        iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
 
         planner.addTerminalStep(true);
         planner.startWithLeft(conf.swingLeft);
@@ -373,24 +381,29 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         UnicycleState tmp_pose;
         for (size_t i = 0; i < path.poses.size(); ++i)
         {
-            tmp_pose.angle = path.poses[i].pose.orientation.z;
+            tf2::Quaternion q;
+            tf2::fromMsg(path.poses.at(i).pose.orientation, q);
+            double roll, pitch, yaw;
+            tf2::Matrix3x3 m(q);
+            m.getRPY(roll, pitch, yaw);
+            tmp_pose.angle = yaw;
             tmp_pose.position(0) = path.poses[i].pose.position.x;
             tmp_pose.position(1) = path.poses[i].pose.position.y;
             converted_path.push_back(tmp_pose);
         } 
-        double approx_speed = std::sqrt(std::pow(conf.maxL, 2) - std::pow(conf.nominalW, 2)) / conf.minT * 0.9 * 0.8;   //from ComputeNewSteps in UnicyclePlanner.cpp
-        std::cerr <<"APPROX SPEED: " << approx_speed <<std::endl;
+        //double approx_speed = std::sqrt(std::pow(conf.maxL, 2) - std::pow(conf.nominalW, 2)) / conf.minT * 0.9 * 0.8;   //from ComputeNewSteps in UnicyclePlanner.cpp
+        //std::cerr <<"APPROX SPEED: " << approx_speed <<std::endl;
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
-        iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path, approx_speed));
-        std::cerr <<"Populating the trajectory took " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
+        //iDynTree::assertTrue(setWaypoints(planner, conf.initTime, conf.endTime, path, approx_speed));
+        //std::cerr <<"Populating the trajectory took " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         std::shared_ptr<FootPrint> left, right;
         left = std::make_shared<FootPrint>();
         right = std::make_shared<FootPrint>();
 
         start = clock();
-        iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
-        //iDynTree::assertTrue(planner.computeNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
+        //iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
+        iDynTree::assertTrue(planner.interpolateNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
         std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         StepList leftSteps = left->getSteps();
