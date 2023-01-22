@@ -73,10 +73,18 @@ private:
             m_path_msg = msg_in;
             // Each time a path is published I need to transform it to the robot frame
             std::cout << "msg_in->header.frame_id: " << msg_in->header.frame_id << std::endl;
-            geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
-            nav_msgs::msg::Path transformed_path = transformPlan(tf, m_path_msg, false);
+            if (msg_in->header.frame_id == m_robot_frame)
+            {
+                plannerTest(*msg_in);
+            }
+            else
+            {
+                geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
+                nav_msgs::msg::Path transformed_path = transformPlan(tf, m_path_msg, true);
 
-            plannerTest(transformed_path);
+                plannerTest(transformed_path);
+            }
+            
         }
         catch(const std::exception& e)
         {
@@ -314,7 +322,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
                 iDynTree::toEigen(rTranspose)*(iDynTree::toEigen(leftSteps.front().position) - iDynTree::toEigen(rightSteps.front().position));
 
         if (rPl(1) < conf.minW){
-            std::cerr <<"[ERROR] Width constraint not satisfied" << std::endl;
+            std::cerr <<"[ERROR] Width constraint not satisfied: " << rPl(1) << " at TIME: " << leftSteps.front().impactTime << std::endl;
             result = false;
         }
 
@@ -342,12 +350,12 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         conf.dY = 0.0;
         conf.maxL = 0.21;    //0.2
         conf.minL = 0.05;
-        conf.minW = 0.12;      //0.08
+        conf.minW = 0.08;      //0.08 -> 0.12
         conf.maxAngle = iDynTree::deg2rad(22);  //45
-        conf.minAngle = iDynTree::deg2rad(8);   //5
+        conf.minAngle = iDynTree::deg2rad(0);   //5 -> 8
         conf.nominalW = 0.14;
         conf.maxT = 1.3;     //10     
-        conf.minT = 1.1;      //3
+        conf.minT = 1.0;      //1.1
         conf.nominalT = 1.2;  //4
         conf.timeWeight = 2.5;
         conf.positionWeight = 1;
@@ -370,9 +378,13 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         iDynTree::assertTrue(planner.setMinimumStepLength(conf.minL));
         iDynTree::assertTrue(planner.setSlowWhenTurnGain(conf.slowWhenTurnGain));
         iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
+        //ADD THIS IF USING INTERPOLATION FOR THE COMPUTATION OF NEW STEPS
+        iDynTree::assertTrue(planner.setUnicycleController(UnicycleController::DIRECT));
+        planner.setDesiredDirectControl(10.0, 0.0, 0.0);
 
         planner.addTerminalStep(true);
         planner.startWithLeft(conf.swingLeft);
+        
  
         //Generate desired trajectory
         clock_t start = clock();
@@ -410,12 +422,13 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         StepList rightSteps = right->getSteps();
 
         std::cerr << "First test." << std::endl;
-        iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-        iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
-
         // publish markers on ros2
         RCLCPP_INFO(this->get_logger(), "Publishing markers");
         publishMarkers(leftSteps, rightSteps);
+        iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
+        iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+
+        
         /*
         std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
         std::cerr << "Second test." << std::endl;

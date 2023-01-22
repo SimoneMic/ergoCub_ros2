@@ -229,6 +229,13 @@ ament_target_dependencies(planner_trigger_server
   "std_srvs"
 )
 
+add_executable(dummy_planner unicyclePlanner_tests/dummy_planner.cpp)
+ament_target_dependencies(dummy_planner
+  "rclcpp"
+  "geometry_msgs"
+  "nav_msgs"
+)
+
 set(dependencies
   rclcpp
   geometry_msgs
@@ -271,6 +278,7 @@ install(TARGETS
   virtual_unicycle_publisher
   async_walking_controller_talker
   planner_trigger_server
+  dummy_planner
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
