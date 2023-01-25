@@ -80,7 +80,7 @@ private:
             else
             {
                 geometry_msgs::msg::TransformStamped tf = m_tf_buffer_in->lookupTransform(m_robot_frame, msg_in->header.frame_id, rclcpp::Time(0));
-                nav_msgs::msg::Path transformed_path = transformPlan(tf, m_path_msg, true);
+                nav_msgs::msg::Path transformed_path = transformPlan(tf, m_path_msg, false);
 
                 plannerTest(transformed_path);
             }
@@ -355,7 +355,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         conf.minAngle = iDynTree::deg2rad(0);   //5 -> 8
         conf.nominalW = 0.14;
         conf.maxT = 1.3;     //10     
-        conf.minT = 1.0;      //1.1
+        conf.minT = 0.7;      //1.1
         conf.nominalT = 1.2;  //4
         conf.timeWeight = 2.5;
         conf.positionWeight = 1;
