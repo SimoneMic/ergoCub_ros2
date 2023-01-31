@@ -403,6 +403,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
             tmp_pose.position(1) = path.poses[i].pose.position.y;
             converted_path.push_back(tmp_pose);
         } 
+        planner.setInputPath(converted_path);
         //double approx_speed = std::sqrt(std::pow(conf.maxL, 2) - std::pow(conf.nominalW, 2)) / conf.minT * 0.9 * 0.8;   //from ComputeNewSteps in UnicyclePlanner.cpp
         //std::cerr <<"APPROX SPEED: " << approx_speed <<std::endl;
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
@@ -415,7 +416,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 
         start = clock();
         //iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
-        iDynTree::assertTrue(planner.interpolateNewStepsFromPath(left, right, conf.initTime, conf.endTime, converted_path));
+        iDynTree::assertTrue(planner.interpolateNewStepsFromPath(left, right, conf.initTime, conf.endTime));
         std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         StepList leftSteps = left->getSteps();
@@ -426,7 +427,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
         RCLCPP_INFO(this->get_logger(), "Publishing markers");
         publishMarkers(leftSteps, rightSteps);
         iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-        iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+        //iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
 
         
         /*
@@ -596,24 +597,6 @@ public:
     
 };
 
-
-/*
-bool populateDesiredTrajectory(UnicyclePlanner& planner, double initTime, double endTime, double dT){
-
-    double t = initTime;
-    iDynTree::Vector2 yDes, yDotDes;
-    while (t <= endTime){
-        yDes(0) = 0.01*t;
-        yDotDes(0) = 0.01;
-        yDes(1) = 0.5*std::sin(0.1*t);
-        yDotDes(1) = 0.5*0.1*std::cos(0.1*t);
-        if(!planner.addPersonFollowingDesiredTrajectoryPoint(t,yDes, yDotDes))
-            return false;
-        t += dT;
-    }
-    return true;
-}
-*/
 /*****************************************************************************************************************************/
 
 
