@@ -236,6 +236,18 @@ ament_target_dependencies(dummy_planner
   "nav_msgs"
 )
 
+add_executable(interpolation_walking_controller_talker src/interpolation_walking_controller_talker.cpp)
+ament_target_dependencies(interpolation_walking_controller_talker
+  "YARP"
+  "rclcpp"
+  "nav_msgs"
+  "tf2_ros"
+  "tf2_msgs"
+  "tf2"
+  "nav2_util"
+  "nav_2d_msgs"
+)
+
 set(dependencies
   rclcpp
   geometry_msgs
@@ -279,6 +291,7 @@ install(TARGETS
   async_walking_controller_talker
   planner_trigger_server
   dummy_planner
+  interpolation_walking_controller_talker
   DESTINATION lib/${PROJECT_NAME})
 
 # install the launch directory
