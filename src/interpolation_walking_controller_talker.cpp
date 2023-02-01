@@ -39,6 +39,9 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_setpoint_sub;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_state_sub;
 
+    int msg_counter = 0;
+    bool msg_num_reached = false;
+
     std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
     std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;
     std::mutex m_mutex;
@@ -48,6 +51,12 @@ private:
     void msg_callback(const nav_msgs::msg::Path::ConstPtr& msg_in)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
+        if (msg_num_reached)
+        {
+            return;
+        }
+        
+        std::cout << "Original path size: " << msg_in->poses.size() << std::endl;
         if (!m_goalReached)
         {
             geometry_msgs::msg::TransformStamped TF = m_tf_buffer->lookupTransform(m_reference_frame, msg_in->header.frame_id, rclcpp::Time(0));
@@ -70,11 +79,17 @@ private:
                     double roll, pitch, yaw;
                     conversion_matrix.getRPY(roll, pitch, yaw);
                     out.push_back(yaw);
-                    //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                    std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
                 }
 
                 //std::cout << "Writing port buffer" << std::endl;
                 m_port.write();
+                ++msg_counter;
+                if (msg_counter > 2)
+                {
+                    msg_num_reached = true;
+                }
+                
             }
             else
             {
@@ -92,7 +107,7 @@ private:
                 out.push_back(0.0);
                 out.push_back(0.0);
                 out.push_back(0.0);
-                //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
             }
             //std::cout << "Writing port buffer" << std::endl;
             m_port.write();
@@ -115,7 +130,7 @@ private:
                 out.push_back(0.0);
                 out.push_back(0.0);
                 out.push_back(0.0);
-                //std::cout << "Passing Path i-th element: " << i << " X : " << out[2*i] << " Y: " << out[2*i+1] << std::endl;
+                std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
             }
             //std::cout << "Writing port buffer" << std::endl;
             m_port.write();
@@ -146,12 +161,15 @@ private:
             std::vector<geometry_msgs::msg::PoseStamped>::const_iterator index_found;
             for (auto it = transformed_plan_.poses.begin(); it != transformed_plan_.poses.end(); ++it)
             {
-                geometry_msgs::msg::TransformStamped robot_path_pose = m_tf_buffer->lookupTransform("geometric_unicycle", "map", rclcpp::Time(0));  //pose of the center of the feet on the path in the map frame
+                geometry_msgs::msg::TransformStamped robot_path_pose = m_tf_buffer->lookupTransform("map","virtual_unicycle_base", rclcpp::Time(0));  //pose of the center of the feet on the path in the map frame geometric_unicycle
+                std::cout << "robot_path_pose: X " << robot_path_pose.transform.translation.x << " Y: " << robot_path_pose.transform.translation.y << std::endl;
                 double distance = sqrt(pow(robot_path_pose.transform.translation.x - it->pose.position.x, 2) + pow(robot_path_pose.transform.translation.y - it->pose.position.y, 2));  //distance of the center of the feet from each path pose
+                std::cout << "Distance: " << distance << std::endl;
                 if (distance < min)
                 {
                     min = distance;
                     index_found = it;
+                    std::cout << "Found min at index: " << std::distance(transformed_plan_.poses.begin() , it) << std::endl;
                 }
             }
             //erase the previous poses up to the point on the path where the robot is supposed to be closer
@@ -162,7 +180,7 @@ private:
         for (int i = 0; i < transformed_plan_.poses.size(); ++i)
         {
             tf2::doTransform(transformed_plan_.poses.at(i), transformed_plan_.poses.at(i), t_tf);
-            //std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
+            std::cout << "Transformed X: " << transformed_plan_.poses.at(i).pose.position.x << "Transformed Y: " << transformed_plan_.poses.at(i).pose.position.y <<std::endl;
         }
         
         if (transformed_plan_.poses.empty()) {
