@@ -84,7 +84,7 @@ private:
                     double roll, pitch, yaw;
                     conversion_matrix.getRPY(roll, pitch, yaw);
                     out.push_back(yaw);
-                    //std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
+                    std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
                 }
                 std::cout << "Original path size: " << transformed_plan.poses.size() << std::endl;
                 //std::cout << "Writing port buffer" << std::endl;
@@ -107,12 +107,12 @@ private:
             auto& out = m_port.prepare();
             //std::cout << "Clearing port buffer" << std::endl;
             out.clear();
-            for (int i = 0; i < 3; ++i)
+            for (int i = 0; i < 1; ++i)
             {
                 out.push_back(0.0);
                 out.push_back(0.0);
                 out.push_back(0.0);
-                //std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
+                std::cout << "Passing Path i-th element: " << i << " X : " << out[3*i] << " Y: " << out[3*i+1] << " Angle: " << out[3*i+2] << std::endl;
             }
             //std::cout << "Writing port buffer" << std::endl;
             m_port.write();

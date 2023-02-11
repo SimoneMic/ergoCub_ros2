@@ -17,7 +17,7 @@ private:
         nav_msgs::msg::Path msg;
         msg.header.stamp = now();
         msg.header.frame_id = "virtual_unicycle_base";  //virtual_unicycle_base
-        double y_increment = 0.05, x_increment = 0.10;
+        double y_increment = 0.05, x_increment = 0.05;
         for (int i = 0; i < 10; i++)
         {
             geometry_msgs::msg::PoseStamped pose;

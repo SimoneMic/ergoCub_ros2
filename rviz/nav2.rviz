@@ -152,11 +152,11 @@ Visualization Manager:
         odom:
           Value: true
         odom_virtual_unicycle_reference:
-          Value: true
+          Value: false
         odom_virtual_unicycle_simulated:
-          Value: true
+          Value: false
         projection:
-          Value: true
+          Value: false
         r_ankle_1:
           Value: false
         r_ankle_2:
@@ -202,9 +202,9 @@ Visualization Manager:
         virtual_unicycle_base:
           Value: true
         virtual_unicycle_reference:
-          Value: true
+          Value: false
         virtual_unicycle_simulated:
-          Value: true
+          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -233,6 +233,10 @@ Visualization Manager:
                               l_sole:
                                 geometric_unicycle:
                                   {}
+                                projection:
+                                  {}
+                                virtual_unicycle_base:
+                                  {}
                                 virtual_unicycle_reference:
                                   {}
                                 virtual_unicycle_simulated:
@@ -248,10 +252,7 @@ Visualization Manager:
                               {}
                             r_foot_rear:
                               r_sole:
-                                projection:
-                                  {}
-                                virtual_unicycle_base:
-                                  {}
+                                {}
               torso_1:
                 torso_2:
                   chest:
