@@ -55,10 +55,22 @@ public:
             RCLCPP_INFO(this->get_logger(), "One of the Step array is empty");
             return false;
         }
-        
+
         visualization_msgs::msg::MarkerArray right_marker_array;
         visualization_msgs::msg::MarkerArray left_marker_array;
-        // visualization_msgs::msg::Marker tmp_marker_msg;
+        //Clear the previous markers
+        visualization_msgs::msg::Marker clear_msg;
+        clear_msg.id = 0;
+        clear_msg.ns = "my_namespace";
+        clear_msg.action = visualization_msgs::msg::Marker::DELETEALL;
+        
+        right_marker_array.markers.push_back(clear_msg);
+        left_marker_array.markers.push_back(clear_msg);
+        m_leftFootprintsMarkersPub->publish(left_marker_array);
+        m_rightFootprintsMarkersPub->publish(right_marker_array);
+
+        left_marker_array.markers.clear();
+        right_marker_array.markers.clear();
         builtin_interfaces::msg::Time timestamp = now();
         //LEFT
         std::cout << "Left Loop" << std::endl;
@@ -68,6 +80,7 @@ public:
             visualization_msgs::msg::Marker tmp_marker_msg;
             tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
+            tmp_marker_msg.ns = "my_namespace";
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
             tmp_marker_msg.scale.y = 0.05;
@@ -113,6 +126,7 @@ public:
             visualization_msgs::msg::Marker tmp_marker_msg;
             tmp_marker_msg.header.frame_id = "odom";
             tmp_marker_msg.id = i;
+            tmp_marker_msg.ns = "my_namespace";
             tmp_marker_msg.header.stamp = timestamp;
             tmp_marker_msg.scale.x = 0.05;
             tmp_marker_msg.scale.y = 0.05;
