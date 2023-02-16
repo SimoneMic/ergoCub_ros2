@@ -10,14 +10,8 @@ def generate_launch_description():
     state_publisher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/robot_state_publisher.launch.py'])
+            '/setup_robot/robot_state_publisher.launch.py'])
         )
-    #deprecated
-    #scan_filtering = IncludeLaunchDescription(
-    #    PythonLaunchDescriptionSource([os.path.join(
-    #        get_package_share_directory('ergoCub_ros2'), 'launch'),
-    #        '/scan_filtering.launch.py'])
-    #    )
     rviz_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
@@ -26,27 +20,27 @@ def generate_launch_description():
     odom_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/odometry_setup.launch.py'])
-        )
-    odom_gt = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(
-            get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/odometry_gt.launch.py'])
+            '/setup_robot/odometry_setup.launch.py'])
         )
     projection_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/chest_projection.launch.py'])
+            '/setup_robot/chest_projection.launch.py'])
         )
     scan_filtering_compensated = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/scan_filtering_compensated.launch.py'])
+            '/setup_robot/scan_filtering_compensated.launch.py'])
         )
     depth_to_pointcloud = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/point_cloud_xyz.launch.py'])
+            '/setup_robot/point_cloud_xyz.launch.py'])
+        )
+    virtual_unicycle = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ergoCub_ros2'), 'launch'),
+            '/setup_robot/virtual_unicycle_publisher.launch.py'])
         )
 
     return LaunchDescription([
@@ -55,5 +49,6 @@ def generate_launch_description():
         rviz_node,
         scan_filtering_compensated,
         odom_node,
-        depth_to_pointcloud
+        depth_to_pointcloud,
+        virtual_unicycle
     ])

@@ -48,21 +48,6 @@ add_definitions(${PCL_DEFINITIONS})
 
 nav2_package()
 
-add_executable(ProtoCode unicyclePlanner_tests/ProtoCode.cpp)
-target_link_libraries(ProtoCode UnicyclePlanner ${iDynTree_LIBRARIES} 
-                      )
-ament_target_dependencies(ProtoCode
-  "std_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "nav_msgs"
-  "rclcpp"
-  "visualization_msgs"
-  "UnicyclePlanner"
-  "tf2"
-  "nav2_util"
-)
-
 add_executable(odometry_standalone odometry_standalone/main.cpp odometry_standalone/src/odometry_standalone.cpp)
 ament_target_dependencies(odometry_standalone
   "std_msgs"
@@ -73,40 +58,6 @@ ament_target_dependencies(odometry_standalone
   "rclcpp"
 )
 target_include_directories(odometry_standalone PRIVATE ${CMAKE_SOURCE_DIR}/odometry_standalone/include)
-
-add_executable(odometry_callback odometry_callback/main.cpp odometry_callback/src/odometry_callback.cpp odometry_callback/src/yarp_odometry_processor.cpp)
-ament_target_dependencies(odometry_callback
-  "std_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "YARP"
-  "nav_msgs"
-  "rclcpp"
-)
-target_include_directories(odometry_callback PRIVATE ${CMAKE_SOURCE_DIR}/odometry_callback/include)
-
-add_executable(odom_GT src/odom_GT.cpp)
-ament_target_dependencies(odom_GT
-  "std_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "YARP"
-  "nav_msgs"
-  "rclcpp"
-)
-
-add_executable(scan_filter src/scan_filtering_ros2.cpp)
-ament_target_dependencies(scan_filter
-  "std_msgs"
-  "tf2_ros"
-  "tf2"
-  "tf2_msgs"
-  "rclcpp"
-  "laser_geometry"
-  "pcl_conversions"
-  "sensor_msgs"
-)
-target_link_libraries(scan_filter ${PCL_LIBRARIES})
 
 add_executable(scan_filter_compensated src/scan_filtering_ros2_compensated.cpp)
 ament_target_dependencies(scan_filter_compensated
@@ -121,19 +72,6 @@ ament_target_dependencies(scan_filter_compensated
 )
 target_link_libraries(scan_filter_compensated ${PCL_LIBRARIES})
 
-add_executable(scan_filter_simple src/scan_filtering_ros2_simple.cpp)
-ament_target_dependencies(scan_filter_simple
-  "std_msgs"
-  "tf2_ros"
-  "tf2"
-  "tf2_msgs"
-  "rclcpp"
-  "laser_geometry"
-  "pcl_conversions"
-  "sensor_msgs"
-)
-target_link_libraries(scan_filter_simple ${PCL_LIBRARIES})
-
 add_executable(chest_projection src/chest_projection.cpp)
 ament_target_dependencies(chest_projection
   "std_msgs"
@@ -142,37 +80,6 @@ ament_target_dependencies(chest_projection
   "YARP"
   "rclcpp"
 )
-
-add_executable(velocity_setpoint_converter src/velocity_setpoint_converter.cpp)
-ament_target_dependencies(velocity_setpoint_converter
-  "YARP"
-  "rclcpp"
-  "geometry_msgs"
-)
-
-add_executable(piecewise_path_converter src/piecewise_path_converter.cpp)
-ament_target_dependencies(piecewise_path_converter
-  "YARP"
-  "rclcpp"
-  "nav_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "tf2"
-  "nav2_util"
-  "nav_2d_msgs"
-)
-
-#add_executable(walking_controller_talker src/walking_controller_talker.cpp)
-#ament_target_dependencies(walking_controller_talker
-#  "YARP"
-#  "rclcpp"
-#  "nav_msgs"
-#  "tf2_ros"
-#  "tf2_msgs"
-#  "tf2"
-#  "nav2_util"
-#  "nav_2d_msgs"
-#)
 
 add_executable(async_walking_controller_talker src/async_walking_controller_talker.cpp)
 ament_target_dependencies(async_walking_controller_talker
@@ -217,11 +124,6 @@ ament_target_dependencies(CoM_trajectory_publisher
   "geometry_msgs"
 )
 
-add_executable(obstacle_script src/obstacle_script.cpp)
-ament_target_dependencies(obstacle_script
-  "YARP"
-)
-
 add_executable(planner_trigger_server planner_trigger/planner_trigger_server.cpp)
 ament_target_dependencies(planner_trigger_server
   "YARP"
@@ -254,19 +156,10 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS
-  #scan_filter
   scan_filter_compensated
-  #scan_filter_simple
   odometry_standalone
-  odometry_callback
-  odom_GT
   chest_projection
   CoM_trajectory_publisher
-  obstacle_script
-  #velocity_setpoint_converter
-  #piecewise_path_converter
-  ProtoCode
-  #walking_controller_talker
   footsteps_viewer
   virtual_unicycle_publisher
   async_walking_controller_talker
