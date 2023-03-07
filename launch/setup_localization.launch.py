@@ -10,12 +10,12 @@ def generate_launch_description():
     map_server = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/map_server.launch.py'])
+            '/amcl/map_server.launch.py'])
         )
     scan_filtering = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ergoCub_ros2'), 'launch'),
-            '/ergoCub_amcl_nav2.launch.py'])
+            '/amcl/amcl.launch.py'])
         )
 
     return LaunchDescription([

@@ -95,19 +95,6 @@ ament_target_dependencies(odom_GT
   "rclcpp"
 )
 
-add_executable(scan_filter src/scan_filtering_ros2.cpp)
-ament_target_dependencies(scan_filter
-  "std_msgs"
-  "tf2_ros"
-  "tf2"
-  "tf2_msgs"
-  "rclcpp"
-  "laser_geometry"
-  "pcl_conversions"
-  "sensor_msgs"
-)
-target_link_libraries(scan_filter ${PCL_LIBRARIES})
-
 add_executable(scan_filter_compensated src/scan_filtering_ros2_compensated.cpp)
 ament_target_dependencies(scan_filter_compensated
   "std_msgs"
@@ -121,19 +108,6 @@ ament_target_dependencies(scan_filter_compensated
 )
 target_link_libraries(scan_filter_compensated ${PCL_LIBRARIES})
 
-add_executable(scan_filter_simple src/scan_filtering_ros2_simple.cpp)
-ament_target_dependencies(scan_filter_simple
-  "std_msgs"
-  "tf2_ros"
-  "tf2"
-  "tf2_msgs"
-  "rclcpp"
-  "laser_geometry"
-  "pcl_conversions"
-  "sensor_msgs"
-)
-target_link_libraries(scan_filter_simple ${PCL_LIBRARIES})
-
 add_executable(chest_projection src/chest_projection.cpp)
 ament_target_dependencies(chest_projection
   "std_msgs"
@@ -142,37 +116,6 @@ ament_target_dependencies(chest_projection
   "YARP"
   "rclcpp"
 )
-
-add_executable(velocity_setpoint_converter src/velocity_setpoint_converter.cpp)
-ament_target_dependencies(velocity_setpoint_converter
-  "YARP"
-  "rclcpp"
-  "geometry_msgs"
-)
-
-add_executable(piecewise_path_converter src/piecewise_path_converter.cpp)
-ament_target_dependencies(piecewise_path_converter
-  "YARP"
-  "rclcpp"
-  "nav_msgs"
-  "tf2_ros"
-  "tf2_msgs"
-  "tf2"
-  "nav2_util"
-  "nav_2d_msgs"
-)
-
-#add_executable(walking_controller_talker src/walking_controller_talker.cpp)
-#ament_target_dependencies(walking_controller_talker
-#  "YARP"
-#  "rclcpp"
-#  "nav_msgs"
-#  "tf2_ros"
-#  "tf2_msgs"
-#  "tf2"
-#  "nav2_util"
-#  "nav_2d_msgs"
-#)
 
 add_executable(async_walking_controller_talker src/async_walking_controller_talker.cpp)
 ament_target_dependencies(async_walking_controller_talker
@@ -273,18 +216,14 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS
-  #scan_filter
   scan_filter_compensated
-  #scan_filter_simple
   odometry_standalone
-  odometry_callback
+  #odometry_callback
   odom_GT
   chest_projection
   CoM_trajectory_publisher
   obstacle_script
-  #velocity_setpoint_converter
-  #piecewise_path_converter
-  ProtoCode
+  #ProtoCode
   #walking_controller_talker
   footsteps_viewer
   virtual_unicycle_publisher

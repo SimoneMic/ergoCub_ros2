@@ -9,7 +9,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     #use_sim_time = LaunchConfiguration('use_sim_time', default=True)
 
-    robot_urdf = '/home/user1/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf'
+    #robot_urdf = '/home/user1/robotology-superbuild/build/install/share/iCub/robots/stickBot/model.urdf'
+    robot_urdf = '/home/user1/robotology-superbuild/build/install/share/ergoCub/robots/ergoCubGazeboV1/model.urdf'
     with open(robot_urdf, 'r') as infp:
         robot_desc = infp.read()
 
