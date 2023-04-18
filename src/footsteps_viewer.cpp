@@ -239,7 +239,7 @@ int main(int argc, char** argv)
         FootstepsViewerYarp dataProcessor;
         yarp::os::Port footprintsPort;
         footprintsPort.open(footprintsPortName);
-        yarp::os::Network::connect("/walking-coordinator/feet_positions:o", footprintsPortName);
+        yarp::os::Network::connect("/navigation_helper/feet_positions:o", footprintsPortName);
         footprintsPort.setReader(dataProcessor);
         dataProcessor.runROS();
         //rclcpp::spin(node);

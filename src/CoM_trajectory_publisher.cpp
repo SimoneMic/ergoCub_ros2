@@ -14,7 +14,7 @@
 class CoM_trajectory_publisher : public rclcpp::Node
 {
 private:
-    const std::string m_yarp_trajectory_port = "/planned_CoM/data:o";
+    const std::string m_yarp_trajectory_port = "/navigation_helper/planned_CoM/data:o";
     const std::string m_port_name = "/CoM_trajectory_publisher_test/reader:i";
     yarp::os::Port m_reader_port;
 

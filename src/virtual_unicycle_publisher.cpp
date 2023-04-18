@@ -35,7 +35,7 @@ public:
     VirtualUnicyclePub() : rclcpp::Node("virtual_unicycle_publisher_node")
     {   
         port.open(port_name);
-        yarp::os::Network::connect("/walking-coordinator/virtual_unicycle_states:o", port_name); 
+        yarp::os::Network::connect("/navigation_helper/virtual_unicycle_states:o", port_name); 
         //create TF
         m_tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         m_tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());

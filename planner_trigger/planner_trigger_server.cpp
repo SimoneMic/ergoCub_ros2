@@ -62,7 +62,7 @@ public:
 int main(int argc, char **argv)
 {
     const std::string portName = "/planner_trigger_server/reader:i";
-    const std::string sourceName = "/walking-coordinator/replanning_trigger:o";
+    const std::string sourceName = "/navigation_helper/replanning_trigger:o";
     rclcpp::init(argc, argv);
     yarp::os::Network yarp;
     yarp::os::Port port;
