@@ -223,7 +223,7 @@ install(TARGETS
   chest_projection
   CoM_trajectory_publisher
   obstacle_script
-  #ProtoCode
+  ProtoCode
   #walking_controller_talker
   footsteps_viewer
   virtual_unicycle_publisher

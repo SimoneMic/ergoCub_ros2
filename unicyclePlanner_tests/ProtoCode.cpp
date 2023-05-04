@@ -15,6 +15,7 @@
 #include <memory>
 #include <iostream>
 #include <ctime>
+#include <thread>
  
 // Custom ROS2
 #include "rclcpp/rclcpp.hpp"
@@ -39,7 +40,7 @@ private:
     std::mutex m_mutex;
     /* consts */
     const std::string m_sub_topic_name = "/plan";
-    const std::string m_pathPub_topic_name = "/unicycle_path_follower/dcm_path";
+    const std::string m_pathPub_topic_name = "/test_path";
     const std::string m_ritgh_footprints_topic_name = "/unicycle_path_follower/right_footprints";
     const std::string m_left_footprints_topic_name = "/unicycle_path_follower/left_footprints";
     const std::string m_robot_frame = "virtual_unicycle_base";
@@ -49,6 +50,7 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_path_sub;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_right_footprint_markers_pub;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_left_footprint_markers_pub;
+    rclcpp::TimerBase::SharedPtr m_timer;
     // TFs
     std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
     std::unique_ptr<tf2_ros::Buffer> m_tf_buffer_in;
@@ -58,6 +60,12 @@ private:
     
     //debug
     bool debug_once = false;
+
+    void timer_callback()
+    {
+        RCLCPP_INFO(this->get_logger(), "STARTING TEST");
+        navigationControlTest();
+    }
 
     void sub_callback(const nav_msgs::msg::Path::ConstPtr &msg_in)
     {
@@ -140,58 +148,6 @@ private:
         return transformed_plan_;
     }
 
-    bool populateDesiredPath(UnicyclePlanner& planner, double initTime, double endTime, double dT, const nav_msgs::msg::Path &path, const double granularity=0.001){
-
-        double t = initTime;    //0.0
-        iDynTree::Vector2 yDes, yDotDes, polarCoordinates;    //yDes is the x, y pose 
-        size_t index = 1;   //skip the first pose (should be too close to the robot origin and could be ignored)
-        std::vector<iDynTree::Vector2> poses_history;
-        // In theory, the first pose should be the reference frame in (0,0)
-        double slope_angle = std::atan2(path.poses.at(index).pose.position.y, path.poses.at(index).pose.position.x);
-        double speed = granularity/dT;
-
-        while (t <= endTime){ 
-            //Calculate the points separated by a fixed granularity
-            if (poses_history.empty())
-            {
-                yDes(0) = granularity * std::cos(slope_angle);
-                yDes(1) = granularity * std::sin(slope_angle);
-                poses_history.push_back(yDes);
-            }
-            else
-            {
-                yDes(0) = granularity * std::cos(slope_angle) + poses_history.back()(0);
-                yDes(1) = granularity * std::sin(slope_angle) + poses_history.back()(1);
-                poses_history.push_back(yDes);
-            }
-            // Velocities
-            yDotDes(0) = speed * std::cos(slope_angle);
-            yDotDes(1) = speed * std::sin(slope_angle);
-            
-            // check if the next goal pose of the path is reached
-            if (nextPoseReached(path, yDes, index, slope_angle))
-            {
-                ++index;
-                //check if last posed is reached
-                if (index >= path.poses.size() - 1)
-                {
-                    if(!planner.addPersonFollowingDesiredTrajectoryPoint(t, yDes, yDotDes))
-                        return false;
-                    break;
-                }
-                //update the slope angle with the direction of the next pose in the path
-                //TODO check if use the latest pose from path or from poses_history
-                slope_angle = std::atan2(path.poses.at(index + 1).pose.position.y - path.poses.at(index).pose.position.y, 
-                                         path.poses.at(index + 1).pose.position.x - path.poses.at(index).pose.position.x);
-            }
-            
-            if(!planner.addPersonFollowingDesiredTrajectoryPoint(t, yDes, yDotDes))
-                return false;
-
-            t += dT;
-        }
-        return true;
-    }
 
     bool nextPoseReached (const nav_msgs::msg::Path &path, const iDynTree::Vector2 &pose, const size_t &current_index, const double &slope_angle){
         double distance_x = std::abs(path.poses.at(current_index).pose.position.x * std::cos(slope_angle)) -
@@ -339,8 +295,268 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
 
     return true;
 }
+
+bool navigationControlTest(){
+
+    Configuration conf;
+    conf.initTime = 0.0;
+    conf.endTime = 200.0;
+    conf.dT = 0.01;
+    conf.K = 10;
+    conf.dX = 0.1;
+    conf.dY = 0.0;
+    conf.maxL = 0.28;
+    conf.minL = 0.05;
+    conf.minW = 0.16;
+    conf.maxAngle = iDynTree::deg2rad(25);
+    conf.minAngle = iDynTree::deg2rad(0);
+    conf.nominalW = 0.18;
+    conf.maxT = 1.3;
+    conf.minT = 1.0;
+    conf.nominalT = 1.2;
+    conf.timeWeight = 2.5;
+    conf.positionWeight = 1;
+    conf.swingLeft = true;
+    conf.slowWhenTurnGain = 0.5;
+
+    //Path
+    std::vector<UnicycleState> path;
+    std::vector<std::vector<double>> waypoint_list;
+    double zero_x = 0, zero_y = 0, zero_theta = 0;
+    waypoint_list.push_back({zero_x, zero_y, zero_theta});     // x, y, theta
+    waypoint_list.push_back({zero_x + 0.0, zero_y + 1.0, zero_theta + 0.0});      // 0 1 0
+    waypoint_list.push_back({zero_x + 0.5, zero_y + 1.0, zero_theta + 0.0});      // 0.5 1 0
+    waypoint_list.push_back({zero_x + 0.5, zero_y - 1.0, zero_theta + 0.0});
+    waypoint_list.push_back({zero_x + 1.0, zero_y - 1.0, zero_theta + 0.0});
+    waypoint_list.push_back({zero_x + 1.5, zero_y + 0.0, zero_theta + 0.0});
+    waypoint_list.push_back({zero_x + 1.0, zero_y + 0.5, zero_theta + M_PI_4});
+    waypoint_list.push_back({zero_x + 0.5, zero_y + 0.0, zero_theta + M_PI_4});
+    waypoint_list.push_back({zero_x + 0.0, zero_y + 0.0, zero_theta + M_PI});
+    
+    
+    for (size_t i = 0; i < waypoint_list.size(); i++)
+    {
+        UnicycleState tmpPose;
+        tmpPose.position(0) = waypoint_list[i][0];
+        tmpPose.position(1) = waypoint_list[i][1];
+        tmpPose.angle = waypoint_list[i][2];
+        path.push_back(tmpPose);
+        
+    }
+
+    nav_msgs::msg::Path debug_path;
+    debug_path.poses.clear();
+    debug_path.header.frame_id = m_robot_frame;
+    debug_path.header.stamp = now();
+    for (size_t i = 0; i < path.size(); i++)
+    {
+        geometry_msgs::msg::PoseStamped tmp_pose;
+        tmp_pose.header.frame_id = m_robot_frame;
+        tmp_pose.header.stamp = now();
+        tmp_pose.pose.position.x = path[i].position[0];
+        tmp_pose.pose.position.y = path[i].position[1];
+        tmp_pose.pose.position.z = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(0.0, 0.0, path[i].angle);
+        tmp_pose.pose.orientation.x = q.x();
+        tmp_pose.pose.orientation.y = q.y();
+        tmp_pose.pose.orientation.z = q.z();
+        tmp_pose.pose.orientation.w = q.w();
+        debug_path.poses.push_back(tmp_pose);
+    }
+    
+
+    UnicyclePlanner planner;
+
+    //Initialization (some of these calls may be avoided)
+    iDynTree::assertTrue(planner.setUnicycleController(UnicycleController::NAVIGATION));
+    iDynTree::assertTrue(planner.setMaximumIntegratorStepSize(conf.dT));
+    iDynTree::assertTrue(planner.setMaxStepLength(conf.maxL));
+    iDynTree::assertTrue(planner.setWidthSetting(conf.minW, conf.nominalW));
+    iDynTree::assertTrue(planner.setMaxAngleVariation(conf.maxAngle));
+    iDynTree::assertTrue(planner.setCostWeights(conf.positionWeight, conf.timeWeight));
+    iDynTree::assertTrue(planner.setStepTimings(conf.minT, conf.maxT, conf.nominalT));
+    iDynTree::assertTrue(planner.setPlannerPeriod(conf.dT));
+    iDynTree::assertTrue(planner.setMinimumAngleForNewSteps(conf.minAngle));
+    iDynTree::assertTrue(planner.setMinimumStepLength(conf.minL));
+    iDynTree::assertTrue(planner.setSlowWhenTurnGain(conf.slowWhenTurnGain));
+    iDynTree::assertTrue(planner.setSlowWhenSidewaysFactor(0.2));
+    iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
+    m_dcm_pub -> publish(debug_path);
+    iDynTree::assertTrue(planner.setInputPath(path));
+    //iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
+
+    planner.addTerminalStep(true);
+    planner.startWithLeft(conf.swingLeft);
+
+    //Generate desired trajectory
+
+    //planner.setDesiredDirectControl(10.0, 0.0, 0.0);
+
+    std::shared_ptr<FootPrint> left, right;
+    left = std::make_shared<FootPrint>();
+    right = std::make_shared<FootPrint>();
+    //iDynTree::Vector2 initPosition;
+    //initPosition(0) = 0.0;
+    //initPosition(1) = -0.05;
+
+    clock_t start = clock();
+    iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
+    std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
+
+    StepList leftSteps = left->getSteps();
+    StepList rightSteps = right->getSteps();
+
+    std::cerr << "First test." << std::endl;
+    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
+    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+    // publish markers on ros2
+    RCLCPP_INFO(this->get_logger(), "Publishing markers");
+    publishMarkers(leftSteps, rightSteps);
+
+    std::this_thread::sleep_for(3000ms);
+
+    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
+    std::cerr << "Second test." << std::endl;
+
+    left->clearSteps();
+    iDynTree::assertTrue(right->dropPastSteps());
+    iDynTree::assertTrue(right->numberOfSteps() == 1);
+    Step lastStep;
+    iDynTree::assertTrue(right->getLastStep(lastStep));
+
+    //planner.setDesiredDirectControl(0.0, 10.0, 0.0);
+    //
+    path.erase(path.begin() + 1);   //erase the second element
+    debug_path.poses.clear();
+    debug_path.header.frame_id = m_robot_frame;
+    debug_path.header.stamp = now();
+    for (size_t i = 0; i < path.size(); i++)
+    {
+        geometry_msgs::msg::PoseStamped tmp_pose;
+        tmp_pose.header.frame_id = m_robot_frame;
+        tmp_pose.header.stamp = now();
+        tmp_pose.pose.position.x = path[i].position[0];
+        tmp_pose.pose.position.y = path[i].position[1];
+        tmp_pose.pose.position.z = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(0.0, 0.0, path[i].angle);
+        tmp_pose.pose.orientation.x = q.x();
+        tmp_pose.pose.orientation.y = q.y();
+        tmp_pose.pose.orientation.z = q.z();
+        tmp_pose.pose.orientation.w = q.w();
+        debug_path.poses.push_back(tmp_pose);
+    }
+    m_dcm_pub->publish(debug_path);
+    planner.setInputPath(path);
+
+    
+
+    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
+
+    leftSteps = left->getSteps();
+    rightSteps = right->getSteps();
+
+    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
+
+    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+    // publish markers on ros2
+    RCLCPP_INFO(this->get_logger(), "Publishing markers");
+    publishMarkers(leftSteps, rightSteps);
+
+    std::this_thread::sleep_for(3000ms);
+
+    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
+    std::cerr << "Third test." << std::endl;
+
+    left->clearSteps();
+    iDynTree::assertTrue(right->dropPastSteps());
+    iDynTree::assertTrue(right->numberOfSteps() == 1);
+    iDynTree::assertTrue(right->getLastStep(lastStep));
+
+    //planner.setDesiredDirectControl(0.0, 0.0, 10.0);
+    path.erase(path.begin() + 1);   //erase the second element
+    debug_path.poses.clear();
+    debug_path.header.frame_id = m_robot_frame;
+    debug_path.header.stamp = now();
+    for (size_t i = 0; i < path.size(); i++)
+    {
+        geometry_msgs::msg::PoseStamped tmp_pose;
+        tmp_pose.header.frame_id = m_robot_frame;
+        tmp_pose.header.stamp = now();
+        tmp_pose.pose.position.x = path[i].position[0];
+        tmp_pose.pose.position.y = path[i].position[1];
+        tmp_pose.pose.position.z = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(0.0, 0.0, path[i].angle);
+        tmp_pose.pose.orientation.x = q.x();
+        tmp_pose.pose.orientation.y = q.y();
+        tmp_pose.pose.orientation.z = q.z();
+        tmp_pose.pose.orientation.w = q.w();
+        debug_path.poses.push_back(tmp_pose);
+    }
+    m_dcm_pub->publish(debug_path);
+    planner.setInputPath(path);
+
+    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
+
+    leftSteps = left->getSteps();
+    rightSteps = right->getSteps();
+
+    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
+
+    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+    // publish markers on ros2
+    RCLCPP_INFO(this->get_logger(), "Publishing markers");
+    publishMarkers(leftSteps, rightSteps);
+
+    std::this_thread::sleep_for(3000ms);
+
+    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
+    std::cerr << "Fourth test." << std::endl;
+
+    left->clearSteps();
+    iDynTree::assertTrue(right->dropPastSteps());
+    iDynTree::assertTrue(right->numberOfSteps() == 1);
+    iDynTree::assertTrue(right->getLastStep(lastStep));
+
+    path.erase(path.begin() + 1);   //erase the second element
+    debug_path.poses.clear();
+    debug_path.header.frame_id = m_robot_frame;
+    debug_path.header.stamp = now();
+    for (size_t i = 0; i < path.size(); i++)
+    {
+        geometry_msgs::msg::PoseStamped tmp_pose;
+        tmp_pose.header.frame_id = m_robot_frame;
+        tmp_pose.header.stamp = now();
+        tmp_pose.pose.position.x = path[i].position[0];
+        tmp_pose.pose.position.y = path[i].position[1];
+        tmp_pose.pose.position.z = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(0.0, 0.0, path[i].angle);
+        tmp_pose.pose.orientation.x = q.x();
+        tmp_pose.pose.orientation.y = q.y();
+        tmp_pose.pose.orientation.z = q.z();
+        tmp_pose.pose.orientation.w = q.w();
+        debug_path.poses.push_back(tmp_pose);
+    }
+    m_dcm_pub->publish(debug_path);
+    planner.setInputPath(path);
+
+
+    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
+
+    leftSteps = left->getSteps();
+    rightSteps = right->getSteps();
+
+    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
+
+    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
+
+    return true;
+}
      
-    bool plannerTest(const nav_msgs::msg::Path &path){
+bool plannerTest(const nav_msgs::msg::Path &path){
         Configuration conf;
         conf.initTime = 0.0;
         conf.endTime = 50.0;    //50.0
@@ -459,123 +675,132 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
     }
 
     bool publishMarkers(std::deque<Step> leftSteps, std::deque<Step> rightSteps){
-        if (leftSteps.size()==0 || rightSteps.size()==0)
+        try
         {
-            RCLCPP_INFO(this->get_logger(), "One of the Step array is empty");
-            return false;
-        }
+            if (leftSteps.size()==0 || rightSteps.size()==0)
+            {
+                RCLCPP_INFO(this->get_logger(), "One of the Step array is empty");
+                return false;
+            }
         
-        visualization_msgs::msg::MarkerArray right_marker_array;
-        visualization_msgs::msg::MarkerArray left_marker_array;
-        visualization_msgs::msg::Marker tmp_marker_msg;
-        builtin_interfaces::msg::Time timestamp = now();
-        //LEFT
-        RCLCPP_INFO(this->get_logger(), "Left Loop");
-        for (size_t i = 0; i < leftSteps.size(); ++i)
-        {
+            visualization_msgs::msg::MarkerArray right_marker_array;
+            visualization_msgs::msg::MarkerArray left_marker_array;
             visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
-            tmp_marker_msg.id = i;
-            tmp_marker_msg.header.stamp = timestamp;
-            tmp_marker_msg.scale.x = 0.05;
-            tmp_marker_msg.scale.y = 0.05;
-            tmp_marker_msg.scale.z = 0.05;
-            // Color for left foot
-            tmp_marker_msg.color.r = 0.0;
-            tmp_marker_msg.color.g = 1.0;
-            tmp_marker_msg.color.b = 0.0;
-            tmp_marker_msg.color.a = 1.0;
-            tmp_marker_msg.type = visualization_msgs::msg::Marker::ARROW;
-            tmp_marker_msg.pose.position.x = leftSteps.at(i).position(0);
-            tmp_marker_msg.pose.position.y = leftSteps.at(i).position(1);
-            tmp_marker_msg.pose.position.z = 0.0;
-            tf2::Quaternion q;
-            q.setRPY(0, 0, leftSteps.at(i).angle);
-            tmp_marker_msg.pose.orientation = tf2::toMsg(q);
-            tmp_marker_msg.frame_locked = true;
-            tmp_marker_msg.action = visualization_msgs::msg::Marker::ADD;
-            //Populate the marker with atleast one mesh point
-            geometry_msgs::msg::Point cube_center;
-            cube_center.x = 0.0;
-            cube_center.y = 0.0;
-            cube_center.z = 0.0;
-            tmp_marker_msg.points.push_back(cube_center);
-            cube_center.x = 0.1;
-            cube_center.y = 0.0;
-            cube_center.z = 0.0;
-            tmp_marker_msg.points.push_back(cube_center);
-            //save marker in the array
-            left_marker_array.markers.push_back(tmp_marker_msg);
-        }
-        RCLCPP_INFO(this->get_logger(), "Publishing Left");
-        m_left_footprint_markers_pub->publish(left_marker_array);
-        //for (auto it = leftSteps.begin(); it != leftSteps.end(); ++it)
-        //{
-        //    tmp_marker_msg.id = std::distance(leftSteps.begin(), it); 
-        //    tmp_marker_msg.pose.position.x = it->position(0);
-        //    tmp_marker_msg.pose.position.y = it->position(1);
-        //    tf2::Quaternion q;
-        //    q.setRPY(0, 0, it->angle);
-        //    tmp_marker_msg.pose.orientation = tf2::toMsg(q);
-//
-        //    left_marker_array.markers.push_back(tmp_marker_msg);
-        //}
+            builtin_interfaces::msg::Time timestamp = now();
+            //LEFT
+            RCLCPP_INFO(this->get_logger(), "Left Loop");
+            for (size_t i = 0; i < leftSteps.size(); ++i)
+            {
+                visualization_msgs::msg::Marker tmp_marker_msg;
+                tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+                tmp_marker_msg.id = i;
+                tmp_marker_msg.header.stamp = timestamp;
+                tmp_marker_msg.scale.x = 0.05;
+                tmp_marker_msg.scale.y = 0.05;
+                tmp_marker_msg.scale.z = 0.05;
+                // Color for left foot
+                tmp_marker_msg.color.r = 0.0;
+                tmp_marker_msg.color.g = 1.0;
+                tmp_marker_msg.color.b = 0.0;
+                tmp_marker_msg.color.a = 1.0;
+                tmp_marker_msg.type = visualization_msgs::msg::Marker::ARROW;
+                tmp_marker_msg.pose.position.x = leftSteps.at(i).position(0);
+                tmp_marker_msg.pose.position.y = leftSteps.at(i).position(1);
+                tmp_marker_msg.pose.position.z = 0.0;
+                tf2::Quaternion q;
+                q.setRPY(0, 0, leftSteps.at(i).angle);
+                tmp_marker_msg.pose.orientation = tf2::toMsg(q);
+                tmp_marker_msg.frame_locked = true;
+                tmp_marker_msg.action = visualization_msgs::msg::Marker::ADD;
+                //Populate the marker with atleast one mesh point
+                geometry_msgs::msg::Point cube_center;
+                cube_center.x = 0.0;
+                cube_center.y = 0.0;
+                cube_center.z = 0.0;
+                tmp_marker_msg.points.push_back(cube_center);
+                cube_center.x = 0.1;
+                cube_center.y = 0.0;
+                cube_center.z = 0.0;
+                tmp_marker_msg.points.push_back(cube_center);
+                //save marker in the array
+                left_marker_array.markers.push_back(tmp_marker_msg);
+            }
+            RCLCPP_INFO(this->get_logger(), "Publishing Left");
+            m_left_footprint_markers_pub->publish(left_marker_array);
+            //for (auto it = leftSteps.begin(); it != leftSteps.end(); ++it)
+            //{
+            //    tmp_marker_msg.id = std::distance(leftSteps.begin(), it); 
+            //    tmp_marker_msg.pose.position.x = it->position(0);
+            //    tmp_marker_msg.pose.position.y = it->position(1);
+            //    tf2::Quaternion q;
+            //    q.setRPY(0, 0, it->angle);
+            //    tmp_marker_msg.pose.orientation = tf2::toMsg(q);
+//  
+            //    left_marker_array.markers.push_back(tmp_marker_msg);
+            //}
 
-        //RIGHT
-        RCLCPP_INFO(this->get_logger(), "Right Loop");
-        /*
-        for (auto it = rightSteps.begin(); it != rightSteps.end(); ++it)
-        {
-            tmp_marker_msg.id = std::distance(rightSteps.begin(), it); 
-            tmp_marker_msg.pose.position.x = it->position(0);
-            tmp_marker_msg.pose.position.y = it->position(1);
-            tf2::Quaternion q;
-            q.setRPY(0, 0, it->angle);
-            tmp_marker_msg.pose.orientation = tf2::toMsg(q);
+            //RIGHT
+            RCLCPP_INFO(this->get_logger(), "Right Loop");
+            /*
+            for (auto it = rightSteps.begin(); it != rightSteps.end(); ++it)
+            {
+                tmp_marker_msg.id = std::distance(rightSteps.begin(), it); 
+                tmp_marker_msg.pose.position.x = it->position(0);
+                tmp_marker_msg.pose.position.y = it->position(1);
+                tf2::Quaternion q;
+                q.setRPY(0, 0, it->angle);
+                tmp_marker_msg.pose.orientation = tf2::toMsg(q);
 
-            right_marker_array.markers.push_back(tmp_marker_msg);
-        } */
-        tmp_marker_msg.points.clear();
-        for (size_t i = 0; i < rightSteps.size(); ++i)
-        {
-            visualization_msgs::msg::Marker tmp_marker_msg;
-            tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
-            tmp_marker_msg.id = i;
-            tmp_marker_msg.header.stamp = timestamp;
-            tmp_marker_msg.scale.x = 0.05;
-            tmp_marker_msg.scale.y = 0.05;
-            tmp_marker_msg.scale.z = 0.05;
-            // Color for left foot
-            tmp_marker_msg.color.r = 1.0;
-            tmp_marker_msg.color.g = 0.0;
-            tmp_marker_msg.color.b = 0.0;
-            tmp_marker_msg.color.a = 1.0;
-            tmp_marker_msg.type = visualization_msgs::msg::Marker::ARROW;
-            tmp_marker_msg.pose.position.x = rightSteps.at(i).position(0);
-            tmp_marker_msg.pose.position.y = rightSteps.at(i).position(1);
-            tmp_marker_msg.pose.position.z = 0.0;
-            tf2::Quaternion q;
-            q.setRPY(0, 0, rightSteps.at(i).angle);
-            tmp_marker_msg.pose.orientation = tf2::toMsg(q);
-            tmp_marker_msg.frame_locked = true;
-            tmp_marker_msg.action = visualization_msgs::msg::Marker::ADD;
-            //Populate the marker with atleast 2 mesh point for ARROW
-            geometry_msgs::msg::Point cube_center;
-            cube_center.x = 0.0;
-            cube_center.y = 0.0;
-            cube_center.z = 0.0;
-            tmp_marker_msg.points.push_back(cube_center);
-            cube_center.x = 0.1;
-            cube_center.y = 0.0;
-            cube_center.z = 0.0;
-            tmp_marker_msg.points.push_back(cube_center);
-            //save marker in the array
-            right_marker_array.markers.push_back(tmp_marker_msg);
+                right_marker_array.markers.push_back(tmp_marker_msg);
+            } */
+            tmp_marker_msg.points.clear();
+            for (size_t i = 0; i < rightSteps.size(); ++i)
+            {
+                visualization_msgs::msg::Marker tmp_marker_msg;
+                tmp_marker_msg.header.frame_id = "virtual_unicycle_base";
+                tmp_marker_msg.id = i;
+                tmp_marker_msg.header.stamp = timestamp;
+                tmp_marker_msg.scale.x = 0.05;
+                tmp_marker_msg.scale.y = 0.05;
+                tmp_marker_msg.scale.z = 0.05;
+                // Color for left foot
+                tmp_marker_msg.color.r = 1.0;
+                tmp_marker_msg.color.g = 0.0;
+                tmp_marker_msg.color.b = 0.0;
+                tmp_marker_msg.color.a = 1.0;
+                tmp_marker_msg.type = visualization_msgs::msg::Marker::ARROW;
+                tmp_marker_msg.pose.position.x = rightSteps.at(i).position(0);
+                tmp_marker_msg.pose.position.y = rightSteps.at(i).position(1);
+                tmp_marker_msg.pose.position.z = 0.0;
+                tf2::Quaternion q;
+                q.setRPY(0, 0, rightSteps.at(i).angle);
+                tmp_marker_msg.pose.orientation = tf2::toMsg(q);
+                tmp_marker_msg.frame_locked = true;
+                tmp_marker_msg.action = visualization_msgs::msg::Marker::ADD;
+                //Populate the marker with atleast 2 mesh point for ARROW
+                geometry_msgs::msg::Point cube_center;
+                cube_center.x = 0.0;
+                cube_center.y = 0.0;
+                cube_center.z = 0.0;
+                tmp_marker_msg.points.push_back(cube_center);
+                cube_center.x = 0.1;
+                cube_center.y = 0.0;
+                cube_center.z = 0.0;
+                tmp_marker_msg.points.push_back(cube_center);
+                //save marker in the array
+                right_marker_array.markers.push_back(tmp_marker_msg);
         }
 
         RCLCPP_INFO(this->get_logger(), "Publishing Right");
         //publish
         m_right_footprint_markers_pub->publish(right_marker_array);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+        
+        
     }
 
 public:
@@ -585,10 +810,12 @@ public:
         m_dcm_pub = this->create_publisher<nav_msgs::msg::Path>(m_pathPub_topic_name, 10);
         m_right_footprint_markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(m_ritgh_footprints_topic_name, 10);
         m_left_footprint_markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(m_left_footprints_topic_name, 10);
-        m_path_sub = this->create_subscription<nav_msgs::msg::Path>(m_sub_topic_name,
-                                                                    10,
-                                                                    std::bind(&RosNode::sub_callback, this, _1)
-                                                                    );
+        //m_path_sub = this->create_subscription<nav_msgs::msg::Path>(m_sub_topic_name,
+        //                                                            10,
+        //                                                            std::bind(&RosNode::sub_callback, this, _1)
+        //                                                            );
+        m_timer = this->create_wall_timer(2000ms, std::bind(&RosNode::timer_callback, this));
+
         //TFs
         m_tf_buffer_in = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer_in);
