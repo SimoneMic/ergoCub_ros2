@@ -64,7 +64,40 @@ private:
     void timer_callback()
     {
         RCLCPP_INFO(this->get_logger(), "STARTING TEST");
-        navigationControlTest();
+        std::vector<std::vector<double>> waypoint_list;
+        double zero_x = 0, zero_y = 0, zero_theta = 0;
+        waypoint_list.push_back({zero_x, zero_y, zero_theta});     // x, y, theta
+        waypoint_list.push_back({zero_x + 0.0, zero_y + 1.0, zero_theta + 0.0});      // 0 1 0
+        waypoint_list.push_back({zero_x + 0.5, zero_y + 1.0, zero_theta + 0.0});      // 0.5 1 0
+        waypoint_list.push_back({zero_x + 0.5, zero_y - 1.0, zero_theta + 0.0});
+        waypoint_list.push_back({zero_x + 1.0, zero_y - 1.0, zero_theta + 0.0});
+        waypoint_list.push_back({zero_x + 1.5, zero_y + 0.0, zero_theta + 0.0});
+        waypoint_list.push_back({zero_x + 1.0, zero_y + 0.5, zero_theta + M_PI_4});
+        waypoint_list.push_back({zero_x + 0.5, zero_y + 0.0, zero_theta + M_PI_4});
+        //waypoint_list.push_back({zero_x - 1.0, zero_y + 2.0, zero_theta + M_PI_4});
+        //waypoint_list.push_back({zero_x - 2.0, zero_y + 1.0, zero_theta + M_PI_4});
+        waypoint_list.push_back({zero_x + 0.0, zero_y + 0.0, zero_theta + M_PI});
+    
+        std::vector<UnicycleState> path;
+        for (size_t i = 0; i < waypoint_list.size(); i++)
+        {
+            UnicycleState tmpPose;
+            tmpPose.position(0) = waypoint_list[i][0];
+            tmpPose.position(1) = waypoint_list[i][1];
+            tmpPose.angle = waypoint_list[i][2];
+            path.push_back(tmpPose);
+        }
+        navigationControlTest(path);
+
+        path.erase(path.begin() + 1);   //erase the second element
+        navigationControlTest(path);
+
+        path.erase(path.begin() + 1);   //erase the second element
+        navigationControlTest(path);
+
+        path.erase(path.begin() + 1);   //erase the second element
+        navigationControlTest(path);
+        
     }
 
     void sub_callback(const nav_msgs::msg::Path::ConstPtr &msg_in)
@@ -296,7 +329,7 @@ bool checkConstraints(std::deque<Step> leftSteps, std::deque<Step> rightSteps, C
     return true;
 }
 
-bool navigationControlTest(){
+bool navigationControlTest(std::vector<UnicycleState> path){
 
     Configuration conf;
     conf.initTime = 0.0;
@@ -320,29 +353,8 @@ bool navigationControlTest(){
     conf.slowWhenTurnGain = 0.5;
 
     //Path
-    std::vector<UnicycleState> path;
-    std::vector<std::vector<double>> waypoint_list;
-    double zero_x = 0, zero_y = 0, zero_theta = 0;
-    waypoint_list.push_back({zero_x, zero_y, zero_theta});     // x, y, theta
-    waypoint_list.push_back({zero_x + 0.0, zero_y + 1.0, zero_theta + 0.0});      // 0 1 0
-    waypoint_list.push_back({zero_x + 0.5, zero_y + 1.0, zero_theta + 0.0});      // 0.5 1 0
-    waypoint_list.push_back({zero_x + 0.5, zero_y - 1.0, zero_theta + 0.0});
-    waypoint_list.push_back({zero_x + 1.0, zero_y - 1.0, zero_theta + 0.0});
-    waypoint_list.push_back({zero_x + 1.5, zero_y + 0.0, zero_theta + 0.0});
-    waypoint_list.push_back({zero_x + 1.0, zero_y + 0.5, zero_theta + M_PI_4});
-    waypoint_list.push_back({zero_x + 0.5, zero_y + 0.0, zero_theta + M_PI_4});
-    waypoint_list.push_back({zero_x + 0.0, zero_y + 0.0, zero_theta + M_PI});
     
     
-    for (size_t i = 0; i < waypoint_list.size(); i++)
-    {
-        UnicycleState tmpPose;
-        tmpPose.position(0) = waypoint_list[i][0];
-        tmpPose.position(1) = waypoint_list[i][1];
-        tmpPose.angle = waypoint_list[i][2];
-        path.push_back(tmpPose);
-        
-    }
 
     nav_msgs::msg::Path debug_path;
     debug_path.poses.clear();
@@ -415,143 +427,6 @@ bool navigationControlTest(){
     publishMarkers(leftSteps, rightSteps);
 
     std::this_thread::sleep_for(3000ms);
-
-    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
-    std::cerr << "Second test." << std::endl;
-
-    left->clearSteps();
-    iDynTree::assertTrue(right->dropPastSteps());
-    iDynTree::assertTrue(right->numberOfSteps() == 1);
-    Step lastStep;
-    iDynTree::assertTrue(right->getLastStep(lastStep));
-
-    //planner.setDesiredDirectControl(0.0, 10.0, 0.0);
-    //
-    path.erase(path.begin() + 1);   //erase the second element
-    debug_path.poses.clear();
-    debug_path.header.frame_id = m_robot_frame;
-    debug_path.header.stamp = now();
-    for (size_t i = 0; i < path.size(); i++)
-    {
-        geometry_msgs::msg::PoseStamped tmp_pose;
-        tmp_pose.header.frame_id = m_robot_frame;
-        tmp_pose.header.stamp = now();
-        tmp_pose.pose.position.x = path[i].position[0];
-        tmp_pose.pose.position.y = path[i].position[1];
-        tmp_pose.pose.position.z = 0.0;
-        tf2::Quaternion q;
-        q.setRPY(0.0, 0.0, path[i].angle);
-        tmp_pose.pose.orientation.x = q.x();
-        tmp_pose.pose.orientation.y = q.y();
-        tmp_pose.pose.orientation.z = q.z();
-        tmp_pose.pose.orientation.w = q.w();
-        debug_path.poses.push_back(tmp_pose);
-    }
-    m_dcm_pub->publish(debug_path);
-    planner.setInputPath(path);
-
-    
-
-    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
-
-    leftSteps = left->getSteps();
-    rightSteps = right->getSteps();
-
-    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-
-    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
-    // publish markers on ros2
-    RCLCPP_INFO(this->get_logger(), "Publishing markers");
-    publishMarkers(leftSteps, rightSteps);
-
-    std::this_thread::sleep_for(3000ms);
-
-    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
-    std::cerr << "Third test." << std::endl;
-
-    left->clearSteps();
-    iDynTree::assertTrue(right->dropPastSteps());
-    iDynTree::assertTrue(right->numberOfSteps() == 1);
-    iDynTree::assertTrue(right->getLastStep(lastStep));
-
-    //planner.setDesiredDirectControl(0.0, 0.0, 10.0);
-    path.erase(path.begin() + 1);   //erase the second element
-    debug_path.poses.clear();
-    debug_path.header.frame_id = m_robot_frame;
-    debug_path.header.stamp = now();
-    for (size_t i = 0; i < path.size(); i++)
-    {
-        geometry_msgs::msg::PoseStamped tmp_pose;
-        tmp_pose.header.frame_id = m_robot_frame;
-        tmp_pose.header.stamp = now();
-        tmp_pose.pose.position.x = path[i].position[0];
-        tmp_pose.pose.position.y = path[i].position[1];
-        tmp_pose.pose.position.z = 0.0;
-        tf2::Quaternion q;
-        q.setRPY(0.0, 0.0, path[i].angle);
-        tmp_pose.pose.orientation.x = q.x();
-        tmp_pose.pose.orientation.y = q.y();
-        tmp_pose.pose.orientation.z = q.z();
-        tmp_pose.pose.orientation.w = q.w();
-        debug_path.poses.push_back(tmp_pose);
-    }
-    m_dcm_pub->publish(debug_path);
-    planner.setInputPath(path);
-
-    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
-
-    leftSteps = left->getSteps();
-    rightSteps = right->getSteps();
-
-    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-
-    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
-    // publish markers on ros2
-    RCLCPP_INFO(this->get_logger(), "Publishing markers");
-    publishMarkers(leftSteps, rightSteps);
-
-    std::this_thread::sleep_for(3000ms);
-
-    std::cerr << std::endl << "------------------------------------------------------------------" << std::endl;
-    std::cerr << "Fourth test." << std::endl;
-
-    left->clearSteps();
-    iDynTree::assertTrue(right->dropPastSteps());
-    iDynTree::assertTrue(right->numberOfSteps() == 1);
-    iDynTree::assertTrue(right->getLastStep(lastStep));
-
-    path.erase(path.begin() + 1);   //erase the second element
-    debug_path.poses.clear();
-    debug_path.header.frame_id = m_robot_frame;
-    debug_path.header.stamp = now();
-    for (size_t i = 0; i < path.size(); i++)
-    {
-        geometry_msgs::msg::PoseStamped tmp_pose;
-        tmp_pose.header.frame_id = m_robot_frame;
-        tmp_pose.header.stamp = now();
-        tmp_pose.pose.position.x = path[i].position[0];
-        tmp_pose.pose.position.y = path[i].position[1];
-        tmp_pose.pose.position.z = 0.0;
-        tf2::Quaternion q;
-        q.setRPY(0.0, 0.0, path[i].angle);
-        tmp_pose.pose.orientation.x = q.x();
-        tmp_pose.pose.orientation.y = q.y();
-        tmp_pose.pose.orientation.z = q.z();
-        tmp_pose.pose.orientation.w = q.w();
-        debug_path.poses.push_back(tmp_pose);
-    }
-    m_dcm_pub->publish(debug_path);
-    planner.setInputPath(path);
-
-
-    iDynTree::assertTrue(planner.computeNewSteps(left, right, lastStep.impactTime, lastStep.impactTime + conf.endTime));
-
-    leftSteps = left->getSteps();
-    rightSteps = right->getSteps();
-
-    iDynTree::assertTrue(printSteps(leftSteps, rightSteps));
-
-    iDynTree::assertTrue(checkConstraints(leftSteps, rightSteps, conf));
 
     return true;
 }
