@@ -67,7 +67,7 @@ private:
         std::vector<std::vector<double>> waypoint_list;
         double zero_x = 0, zero_y = 0, zero_theta = 0;
         waypoint_list.push_back({zero_x, zero_y, zero_theta});     // x, y, theta
-        waypoint_list.push_back({zero_x + 0.0, zero_y + 1.0, zero_theta + 0.0});      // 0 1 0
+        waypoint_list.push_back({zero_x + 0.0, zero_y + 1.0, zero_theta + M_PI_2});      // 0 1 0
         waypoint_list.push_back({zero_x + 0.5, zero_y + 1.0, zero_theta + 0.0});      // 0.5 1 0
         waypoint_list.push_back({zero_x + 0.5, zero_y - 1.0, zero_theta + 0.0});
         waypoint_list.push_back({zero_x + 1.0, zero_y - 1.0, zero_theta + 0.0});
@@ -339,7 +339,7 @@ bool navigationControlTest(std::vector<UnicycleState> path){
     conf.dX = 0.1;
     conf.dY = 0.0;
     conf.maxL = 0.28;
-    conf.minL = 0.05;
+    conf.minL = 0.01;
     conf.minW = 0.16;
     conf.maxAngle = iDynTree::deg2rad(25);
     conf.minAngle = iDynTree::deg2rad(0);
@@ -350,12 +350,9 @@ bool navigationControlTest(std::vector<UnicycleState> path){
     conf.timeWeight = 2.5;
     conf.positionWeight = 1;
     conf.swingLeft = true;
-    conf.slowWhenTurnGain = 0.5;
+    conf.slowWhenTurnGain = 1;    //0.5
 
     //Path
-    
-    
-
     nav_msgs::msg::Path debug_path;
     debug_path.poses.clear();
     debug_path.header.frame_id = m_robot_frame;
@@ -393,7 +390,7 @@ bool navigationControlTest(std::vector<UnicycleState> path){
     iDynTree::assertTrue(planner.setMinimumStepLength(conf.minL));
     iDynTree::assertTrue(planner.setSlowWhenTurnGain(conf.slowWhenTurnGain));
     iDynTree::assertTrue(planner.setSlowWhenSidewaysFactor(0.2));
-    iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
+    iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.4));
     m_dcm_pub -> publish(debug_path);
     iDynTree::assertTrue(planner.setInputPath(path));
     //iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
