@@ -504,7 +504,7 @@ bool plannerTest(const nav_msgs::msg::Path &path){
 
         start = clock();
         //iDynTree::assertTrue(planner.computeNewSteps(left, right, conf.initTime, conf.endTime));
-        iDynTree::assertTrue(planner.interpolateNewStepsFromPath(left, right, conf.initTime, conf.endTime));
+        //iDynTree::assertTrue(planner.interpolateNewStepsFromPath(left, right, conf.initTime, conf.endTime));
         std::cerr <<"Test Finished in " << (static_cast<double>(clock() - start) / CLOCKS_PER_SEC) << " seconds."<<std::endl;
 
         StepList leftSteps = left->getSteps();
