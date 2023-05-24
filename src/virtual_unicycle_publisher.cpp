@@ -61,7 +61,7 @@ public:
             //             " Z: " << data.get(3).asList()->get(2).asFloat64() << " x: " << data.get(3).asList()->get(3).asFloat64() <<
             //             " y: " << data.get(3).asList()->get(4).asFloat64() << " z: " << data.get(3).asList()->get(5).asFloat64() <<
             //              std::endl;
-            std::cout << "Time: " << now().seconds() << " " << now().nanoseconds() << std::endl;
+            //std::cout << "Time: " << now().seconds() << " " << now().nanoseconds() << std::endl;
             std::vector<geometry_msgs::msg::TransformStamped> tfBuffer;
             geometry_msgs::msg::TransformStamped tf, tfReference;
             tf.header.stamp = now();
@@ -161,7 +161,7 @@ public:
             tfReference.transform.rotation.y = qRef.y();
             tfReference.transform.rotation.z = qRef.z();
             tfReference.transform.rotation.w = qRef.w();
-            std::cout << "Publishing tf X: " <<  tf.transform.translation.x << " Y: " <<  tf.transform.translation.y << std::endl;
+            //std::cout << "Publishing tf X: " <<  tf.transform.translation.x << " Y: " <<  tf.transform.translation.y << std::endl;
 
             tfBuffer.push_back(tf);
             tfBuffer.push_back(tfReference);
@@ -242,11 +242,11 @@ public:
                 geometrycalVirtualUnicycle.transform.rotation.z = 0;
                 geometrycalVirtualUnicycle.transform.rotation.w = 1;
             }
-            std::cout << " Rotation: w " << geometrycalVirtualUnicycle.transform.rotation.w << std::endl;
+            //std::cout << " Rotation: w " << geometrycalVirtualUnicycle.transform.rotation.w << std::endl;
             tfBuffer.push_back(geometrycalVirtualUnicycle);
             m_tf_broadcaster->sendTransform(tfBuffer);         
 
-            std::cout << "Exit publish" << std::endl;
+            //std::cout << "Exit publish" << std::endl;
         }
         catch(const std::exception& e)
         {
@@ -271,7 +271,6 @@ int main(int argc, char** argv)
         //yarp::os::Network::connect("/walking-coordinator/virtual_unicycle_states:o", port_name); 
         //port.setReader(processor);
         auto node = std::make_shared<VirtualUnicyclePub>();
-        std::cout << "Spinning..." << std::endl;
         rclcpp::spin(node);
     }
     std::cout << "Shutting down" << std::endl;
