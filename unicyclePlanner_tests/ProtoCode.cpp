@@ -392,7 +392,7 @@ bool navigationControlTest(std::vector<UnicycleState> path){
     iDynTree::assertTrue(planner.setSlowWhenSidewaysFactor(0.2));
     iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.4));
     m_dcm_pub -> publish(debug_path);
-    iDynTree::assertTrue(planner.setInputPath(path));
+    iDynTree::assertTrue(planner.setNavigationPath(path));
     //iDynTree::assertTrue(planner.setSaturationsConservativeFactors(0.7, 0.7));
 
     planner.addTerminalStep(true);
@@ -491,7 +491,7 @@ bool plannerTest(const nav_msgs::msg::Path &path){
             tmp_pose.position(1) = path.poses[i].pose.position.y;
             converted_path.push_back(tmp_pose);
         } 
-        planner.setInputPath(converted_path);
+        planner.setNavigationPath(converted_path);
         //double approx_speed = std::sqrt(std::pow(conf.maxL, 2) - std::pow(conf.nominalW, 2)) / conf.minT * 0.9 * 0.8;   //from ComputeNewSteps in UnicyclePlanner.cpp
         //std::cerr <<"APPROX SPEED: " << approx_speed <<std::endl;
         //iDynTree::assertTrue(populateDesiredTrajectory(planner, conf.initTime, conf.endTime, conf.dT));
