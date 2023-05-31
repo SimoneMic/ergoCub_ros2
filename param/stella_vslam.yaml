@@ -1,0 +1,8 @@
+run_slam:
+  ros__parameters:
+    publish_tf: false
+    odom_frame: odom
+    map_frame: map
+    base_link: virtual_unicycle_base
+    camera_frame: realsense
+    transform_tolerance: 0.5
