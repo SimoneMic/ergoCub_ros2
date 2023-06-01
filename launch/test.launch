@@ -1,0 +1,11 @@
+<launch>
+    <!--<remap from="/t265/fisheye1/image_raw" to="/camera/image_raw"/>-->
+    <!--<include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch" >
+        <arg name="enable_fisheye" value="true" />
+    </include> -->
+    <arg name="vocab_arg" default= "/home/user1/ros2_workspace/src/ergoCub_ros2/vocabulary/orb_vocab.fbow" />
+    <arg name="config_arg" default= "/home/user1/ros2_workspace/src/ergoCub_ros2/param/realsense.yaml"/>
+    <node name="stella_vslam" pkg="stella_vslam_ros" exec="run_slam" >
+        <param from="/home/user1/ros2_workspace/src/ergoCub_ros2/param/stella_vslam.yaml"/>
+    </node>
+</launch>

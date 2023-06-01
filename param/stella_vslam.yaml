@@ -6,3 +6,5 @@ run_slam:
     base_link: virtual_unicycle_base
     camera_frame: realsense
     transform_tolerance: 0.5
+    #vocab arg: "/home/user1/ros2_workspace/src/ergoCub_ros2/vocabulary/orb_vocab.fbow"
+    #config arg: "/home/user1/ros2_workspace/src/ergoCub_ros2/param/realsense.yam"

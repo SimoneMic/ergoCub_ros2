@@ -42,7 +42,7 @@ def generate_launch_description():
                                     executable='run_slam',
                                     output='screen',
                                     parameters=[configured_params],
-                                    arguments="-v $(find ergoCub_ros2)/vocabulary/orb_vocab.fbow -c $(find ergoCub_ros2)/setup/realsense.yaml"
+                                    ros_arguments=['-v $(find ergoCub_ros2)/vocabulary/orb_vocab.fbow -c $(find ergoCub_ros2)/param/realsense.yaml']
                                 )])
     
     ld = LaunchDescription()
