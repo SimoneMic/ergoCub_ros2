@@ -5,6 +5,7 @@
 #include "yarp/sig/Vector.h"
 #include "yarp/os/ConnectionWriter.h"
 #include "yarp/os/Portable.h"
+#include <yarp/os/Contact.h>
 
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/transform_listener.h"
@@ -24,7 +25,8 @@ class VirtualUnicyclePub : public rclcpp::Node
 {
 private:
     const std::string port_name = "/virtual_unicycle_publisher/unicycle_states:i";
-    yarp::os::Port port;
+    yarp::os::BufferedPort<yarp::os::Bottle> port;
+    yarp::os::Contact portContact{port_name, "shmem" };
     const double m_loopFreq = 100.0;
     std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_broadcaster;
     std::shared_ptr<tf2_ros::TransformListener> m_tf_listener{nullptr};
@@ -34,7 +36,7 @@ private:
 public:
     VirtualUnicyclePub() : rclcpp::Node("virtual_unicycle_publisher_node")
     {   
-        port.open(port_name);
+        port.open(portContact, true);
         yarp::os::Network::connect("/navigation_helper/virtual_unicycle_states:o", port_name); 
         //create TF
         m_tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -49,8 +51,7 @@ public:
         //std::lock_guard<std::mutex> guard(m_mutex);
         try
         {
-            yarp::os::Bottle data;
-            port.read(data);
+            yarp::os::Bottle* data = port.read(true);
             //std::cout << "publish" << std::endl;
             //std::cout << "Reading virtual_unicycle_simulated: X: " <<  data.get(0).asList()->get(0).asFloat64() << " Y: " <<  data.get(0).asList()->get(1).asFloat64() <<
             //             " Theta: " << data.get(0).asList()->get(2).asFloat64() << std::endl;
@@ -74,7 +75,7 @@ public:
             tfReference_fromOdom.header.frame_id = "odom";
 
 
-            if (data.get(2).asString() == "left")
+            if (data->get(2).asString() == "left")
             {
                 tf.header.frame_id = "l_sole";
                 tfReference.header.frame_id = "l_sole";
@@ -101,12 +102,12 @@ public:
             odomTf.header.frame_id = "odom";
             odomTf.child_frame_id = "root_link";
             odomTf.header.stamp = tf.header.stamp;
-            odomTf.transform.translation.x = data.get(3).asList()->get(0).asFloat64();
-            odomTf.transform.translation.y = data.get(3).asList()->get(1).asFloat64();
-            odomTf.transform.translation.z = data.get(3).asList()->get(2).asFloat64();
+            odomTf.transform.translation.x = data->get(3).asList()->get(0).asFloat64();
+            odomTf.transform.translation.y = data->get(3).asList()->get(1).asFloat64();
+            odomTf.transform.translation.z = data->get(3).asList()->get(2).asFloat64();
 
             tf2::Quaternion qOdom;
-            qOdom.setRPY(data.get(3).asList()->get(3).asFloat64(), data.get(3).asList()->get(4).asFloat64(), data.get(3).asList()->get(5).asFloat64());
+            qOdom.setRPY(data->get(3).asList()->get(3).asFloat64(), data->get(3).asList()->get(4).asFloat64(), data->get(3).asList()->get(5).asFloat64());
             odomTf.transform.rotation.x = qOdom.x();
             odomTf.transform.rotation.y = qOdom.y();
             odomTf.transform.rotation.z = qOdom.z();
@@ -115,16 +116,16 @@ public:
             //m_tf_broadcaster->sendTransform(odomTf);
 
             //Virtual unicycle base pub in odom frame
-            tf_fromOdom.transform.translation.x = data.get(0).asList()->get(0).asFloat64();
-            tf_fromOdom.transform.translation.y = data.get(0).asList()->get(1).asFloat64();
+            tf_fromOdom.transform.translation.x = data->get(0).asList()->get(0).asFloat64();
+            tf_fromOdom.transform.translation.y = data->get(0).asList()->get(1).asFloat64();
             tf_fromOdom.transform.translation.z = 0.0;
 
-            tfReference_fromOdom.transform.translation.x = data.get(1).asList()->get(0).asFloat64();
-            tfReference_fromOdom.transform.translation.y = data.get(1).asList()->get(1).asFloat64();
+            tfReference_fromOdom.transform.translation.x = data->get(1).asList()->get(0).asFloat64();
+            tfReference_fromOdom.transform.translation.y = data->get(1).asList()->get(1).asFloat64();
             tfReference_fromOdom.transform.translation.z = 0.0;
 
             tf2::Quaternion qVirtualUnicycleInOdomFrame;
-            qVirtualUnicycleInOdomFrame.setRPY(0, 0, data.get(0).asList()->get(2).asFloat64());
+            qVirtualUnicycleInOdomFrame.setRPY(0, 0, data->get(0).asList()->get(2).asFloat64());
             tf_fromOdom.transform.rotation.x = qVirtualUnicycleInOdomFrame.x();
             tf_fromOdom.transform.rotation.y = qVirtualUnicycleInOdomFrame.y();
             tf_fromOdom.transform.rotation.z = qVirtualUnicycleInOdomFrame.z();
@@ -132,7 +133,7 @@ public:
             tfReference_fromOdom.transform.rotation = tf_fromOdom.transform.rotation;
 
             geometry_msgs::msg::TransformStamped footToRootTF;
-            if (data.get(2).asString() == "left")
+            if (data->get(2).asString() == "left")
             {
                 footToRootTF = m_tf_buffer_in->lookupTransform("root_link", "l_sole", rclcpp::Time(0));
             }
@@ -179,7 +180,7 @@ public:
             geometrycalVirtualUnicycle.header.stamp = tf.header.stamp;
             geometrycalVirtualUnicycle.child_frame_id = "geometric_unicycle";
             //The unicycle pose and orientation will follow the swing foot ones ONLY if it has surpassed the stance foot (in the X direction)
-            if (data.get(2).asString() == "left")
+            if (data->get(2).asString() == "left")
             {
                 stanceFoot = "l_sole";
                 swingFoot = "r_sole";
